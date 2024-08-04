@@ -1,6 +1,11 @@
 import React from 'react';
-import { Card, CardContent, Typography, Box, Chip, Button } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, Button, IconButton } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FacebookShareButton, TwitterShareButton, WhatsappShareButton, EmailShareButton } from 'react-share';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import EmailIcon from '@mui/icons-material/Email';
 
 interface JokeDisplayProps {
   joke: {
@@ -23,6 +28,9 @@ const emojis = [
 ];
 
 const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate }) => {
+  const shareUrl = `${window.location.origin}/joke/${joke.id}`;
+  const shareTitle = `Check out this dad joke: ${joke.setup}`;
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -65,9 +73,31 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate }) => {
                 ))}
               </Box>
             </Box>
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1, mb: 2 }}>
               {joke.ratingCount} votes • Average: {joke.rating.toFixed(1)}
             </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+              <FacebookShareButton url={shareUrl} title={shareTitle}>
+                <IconButton color="primary" aria-label="share on facebook">
+                  <FacebookIcon />
+                </IconButton>
+              </FacebookShareButton>
+              <TwitterShareButton url={shareUrl} title={shareTitle}>
+                <IconButton color="primary" aria-label="share on twitter">
+                  <TwitterIcon />
+                </IconButton>
+              </TwitterShareButton>
+              <WhatsappShareButton url={shareUrl} title={shareTitle}>
+                <IconButton color="primary" aria-label="share on whatsapp">
+                  <WhatsAppIcon />
+                </IconButton>
+              </WhatsappShareButton>
+              <EmailShareButton url={shareUrl} subject="Funny Dad Joke" body={shareTitle}>
+                <IconButton color="primary" aria-label="share via email">
+                  <EmailIcon />
+                </IconButton>
+              </EmailShareButton>
+            </Box>
           </CardContent>
         </Card>
       </motion.div>

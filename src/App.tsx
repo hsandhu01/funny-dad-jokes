@@ -91,8 +91,8 @@ const App: React.FC = () => {
 
   const getRandomJoke = () => {
     const newJoke = jokes[Math.floor(Math.random() * jokes.length)];
-    setCurrentJoke(null);  // Set to null first to trigger exit animation
-    setTimeout(() => setCurrentJoke(newJoke), 500);  // Set new joke after exit animation
+    setCurrentJoke(null);
+    setTimeout(() => setCurrentJoke(newJoke), 500);
   };
 
   const rateJoke = async (rating: number) => {
@@ -200,10 +200,6 @@ const App: React.FC = () => {
                 <MenuItem value="wordplay">Wordplay</MenuItem>
                 <MenuItem value="science">Science</MenuItem>
                 <MenuItem value="animals">Animals</MenuItem>
-                <MenuItem value="food">Food</MenuItem>
-                <MenuItem value="school">School</MenuItem>
-                <MenuItem value="halloween">Halloween</MenuItem>
-                <MenuItem value="sports">Sports</MenuItem>
               </Select>
             </FormControl>
 
