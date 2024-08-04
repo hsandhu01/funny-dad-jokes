@@ -200,6 +200,10 @@ const App: React.FC = () => {
                 <MenuItem value="wordplay">Wordplay</MenuItem>
                 <MenuItem value="science">Science</MenuItem>
                 <MenuItem value="animals">Animals</MenuItem>
+                <MenuItem value="food">Food</MenuItem>
+                <MenuItem value="school">School</MenuItem>
+                <MenuItem value="halloween">Halloween</MenuItem>
+                <MenuItem value="sports">Sports</MenuItem>
               </Select>
             </FormControl>
 

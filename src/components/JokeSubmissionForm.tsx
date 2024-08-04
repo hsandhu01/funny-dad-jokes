@@ -52,6 +52,10 @@ const JokeSubmissionForm: React.FC<JokeSubmissionFormProps> = ({ onSubmit }) => 
           <MenuItem value="wordplay">Wordplay</MenuItem>
           <MenuItem value="science">Science</MenuItem>
           <MenuItem value="animals">Animals</MenuItem>
+          <MenuItem value="food">Food</MenuItem>
+          <MenuItem value="school">School</MenuItem>
+          <MenuItem value="halloween">Halloween</MenuItem>
+          <MenuItem value="sports">Sports</MenuItem>
         </Select>
       </FormControl>
       <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
