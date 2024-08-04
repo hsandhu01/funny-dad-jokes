@@ -6,6 +6,8 @@ import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
 interface JokeDisplayProps {
   joke: {
@@ -17,6 +19,8 @@ interface JokeDisplayProps {
     ratingCount: number;
   };
   onRate: (rating: number) => void;
+  onToggleFavorite: () => void;
+  isFavorite: boolean;
 }
 
 const emojis = [
@@ -27,7 +31,7 @@ const emojis = [
   { emoji: '🤣', rating: 5, label: 'Hilarious' },
 ];
 
-const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate }) => {
+const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorite, isFavorite }) => {
   const shareUrl = `${window.location.origin}/joke/${joke.id}`;
   const shareTitle = `Check out this dad joke: ${joke.setup}`;
 
@@ -97,6 +101,9 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate }) => {
                   <EmailIcon />
                 </IconButton>
               </EmailShareButton>
+              <IconButton onClick={onToggleFavorite} color="primary" aria-label="toggle favorite">
+                {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+              </IconButton>
             </Box>
           </CardContent>
         </Card>

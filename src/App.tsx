@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs, query, where, CollectionReference, Query, DocumentData, addDoc, updateDoc, doc, limit } from 'firebase/firestore';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { collection, getDocs, query, where, CollectionReference, Query, DocumentData, addDoc, updateDoc, doc, deleteDoc, limit } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth } from './firebase';
 import JokeDisplay from './components/JokeDisplay';
 import JokeSubmissionForm from './components/JokeSubmissionForm';
 import Auth from './components/Auth';
+import UserProfile from './components/UserProfile';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import AppBar from '@mui/material/AppBar';
@@ -42,6 +44,7 @@ const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [favoriteJokes, setFavoriteJokes] = useState<string[]>([]);
 
   const theme = createTheme({
     palette: {
@@ -71,11 +74,28 @@ const App: React.FC = () => {
     setLoading(false);
   }, [selectedCategory]);
 
+  const fetchFavorites = useCallback(async () => {
+    if (user) {
+      const favoritesRef = collection(db, 'favorites');
+      const q = query(favoritesRef, where('userId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      const favoriteIds = querySnapshot.docs.map(doc => doc.data().jokeId);
+      setFavoriteJokes(favoriteIds);
+    }
+  }, [user]);
+
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      setUser(user);
+      if (user) {
+        await fetchFavorites();
+      } else {
+        setFavoriteJokes([]);
+      }
+    });
     fetchJokes();
     return unsubscribe;
-  }, [fetchJokes]);
+  }, [fetchJokes, fetchFavorites]);
 
   useEffect(() => {
     const fetchJokeOfTheDay = async () => {
@@ -109,6 +129,27 @@ const App: React.FC = () => {
       }
     } else if (!user) {
       alert('Please sign in to rate jokes');
+    }
+  };
+
+  const toggleFavorite = async (jokeId: string) => {
+    if (user) {
+      const favoritesRef = collection(db, 'favorites');
+      const q = query(favoritesRef, where('userId', '==', user.uid), where('jokeId', '==', jokeId));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        // Add to favorites
+        await addDoc(favoritesRef, { userId: user.uid, jokeId });
+        setFavoriteJokes([...favoriteJokes, jokeId]);
+      } else {
+        // Remove from favorites
+        const docToDelete = querySnapshot.docs[0];
+        await deleteDoc(doc(db, 'favorites', docToDelete.id));
+        setFavoriteJokes(favoriteJokes.filter(id => id !== jokeId));
+      }
+    } else {
+      alert('Please sign in to favorite jokes');
     }
   };
 
@@ -157,76 +198,103 @@ const App: React.FC = () => {
   if (error) return <div>{error}</div>;
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <div className="App">
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Dad Jokes Extravaganza
-            </Typography>
-            {user ? (
-              <>
-                <Button color="inherit" onClick={signOut}>Sign Out</Button>
-                <Button color="inherit" onClick={() => setShowSubmissionForm(!showSubmissionForm)}>
-                  {showSubmissionForm ? 'Cancel' : 'Submit a Joke'}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button color="inherit" onClick={signIn}>Sign In with Google</Button>
-                <Auth onSignIn={handleEmailSignIn} />
-              </>
-            )}
-            <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(!darkMode)} color="inherit">
-              {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
-          </Toolbar>
-        </AppBar>
+    <Router>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <div className="App">
+          <AppBar position="static">
+            <Toolbar>
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
+                  Dad Jokes Extravaganza
+                </Link>
+              </Typography>
+              {user ? (
+                <>
+                  <Button color="inherit" component={Link} to="/profile">Profile</Button>
+                  <Button color="inherit" onClick={signOut}>Sign Out</Button>
+                  <Button color="inherit" onClick={() => setShowSubmissionForm(!showSubmissionForm)}>
+                    {showSubmissionForm ? 'Cancel' : 'Submit a Joke'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button color="inherit" onClick={signIn}>Sign In with Google</Button>
+                  <Auth onSignIn={handleEmailSignIn} />
+                </>
+              )}
+              <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(!darkMode)} color="inherit">
+                {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+              </IconButton>
+            </Toolbar>
+          </AppBar>
 
-        <Container maxWidth="md">
-          <Box sx={{ my: 4 }}>
-            <FormControl fullWidth>
-              <InputLabel id="category-select-label">Category</InputLabel>
-              <Select
-                labelId="category-select-label"
-                id="category-select"
-                value={selectedCategory}
-                label="Category"
-                onChange={handleCategoryChange}
-              >
-                <MenuItem value="all">All Categories</MenuItem>
-                <MenuItem value="pun">Pun</MenuItem>
-                <MenuItem value="wordplay">Wordplay</MenuItem>
-                <MenuItem value="science">Science</MenuItem>
-                <MenuItem value="animals">Animals</MenuItem>
-              </Select>
-            </FormControl>
+          <Container maxWidth="md">
+            <Routes>
+              <Route path="/" element={
+                <Box sx={{ my: 4 }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="category-select-label">Category</InputLabel>
+                    <Select
+                      labelId="category-select-label"
+                      id="category-select"
+                      value={selectedCategory}
+                      label="Category"
+                      onChange={handleCategoryChange}
+                    >
+                      <MenuItem value="all">All Categories</MenuItem>
+                      <MenuItem value="pun">Pun</MenuItem>
+                      <MenuItem value="wordplay">Wordplay</MenuItem>
+                      <MenuItem value="science">Science</MenuItem>
+                      <MenuItem value="animals">Animals</MenuItem>
+                      <MenuItem value="food">Food</MenuItem>
+                      <MenuItem value="school">School</MenuItem>
+                      <MenuItem value="halloween">Halloween</MenuItem>
+                      <MenuItem value="sports">Sports</MenuItem>
+                    </Select>
+                  </FormControl>
 
-            {jokeOfTheDay && (
-              <Box sx={{ my: 4 }}>
-                <Typography variant="h5" component="h2" gutterBottom>
-                  Joke of the Day
-                </Typography>
-                <JokeDisplay joke={jokeOfTheDay} onRate={rateJoke} />
-              </Box>
-            )}
+                  {jokeOfTheDay && (
+                    <Box sx={{ my: 4 }}>
+                      <Typography variant="h5" component="h2" gutterBottom>
+                        Joke of the Day
+                      </Typography>
+                      <JokeDisplay 
+                        joke={jokeOfTheDay} 
+                        onRate={rateJoke} 
+                        onToggleFavorite={() => toggleFavorite(jokeOfTheDay.id)}
+                        isFavorite={favoriteJokes.includes(jokeOfTheDay.id)}
+                      />
+                    </Box>
+                  )}
 
-            {showSubmissionForm && user ? (
-              <JokeSubmissionForm onSubmit={submitJoke} />
-            ) : (
-              <AnimatePresence mode="wait">
-                {currentJoke && <JokeDisplay key={currentJoke.id} joke={currentJoke} onRate={rateJoke} />}
-              </AnimatePresence>
-            )}
-            
-            <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
-              Get Another Joke
-            </Button>
-          </Box>
-        </Container>
-      </div>
-    </ThemeProvider>
+                  {showSubmissionForm && user ? (
+                    <JokeSubmissionForm onSubmit={submitJoke} />
+                  ) : (
+                    <AnimatePresence mode="wait">
+                      {currentJoke && (
+                        <JokeDisplay 
+                          key={currentJoke.id} 
+                          joke={currentJoke} 
+                          onRate={rateJoke} 
+                          onToggleFavorite={() => toggleFavorite(currentJoke.id)}
+                          isFavorite={favoriteJokes.includes(currentJoke.id)}
+                        />
+                      )}
+                    </AnimatePresence>
+                  )}
+                  
+                  <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
+                    Get Another Joke
+                  </Button>
+                </Box>
+              } />
+              <Route path="/profile" element={<UserProfile />} />
+            </Routes>
+          </Container>
+        </div>
+      </ThemeProvider>
+    </Router>
   );
 };
 
