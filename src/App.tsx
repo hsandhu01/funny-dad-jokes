@@ -4,6 +4,22 @@ import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth } from './firebase';
 import JokeDisplay from './components/JokeDisplay';
 import JokeSubmissionForm from './components/JokeSubmissionForm';
+import Auth from './components/Auth';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Box from '@mui/material/Box';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import IconButton from '@mui/material/IconButton';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 import './App.css';
 
 interface Joke {
@@ -25,6 +41,12 @@ const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+
+  const theme = createTheme({
+    palette: {
+      mode: darkMode ? 'dark' : 'light',
+    },
+  });
 
   const fetchJokes = useCallback(async () => {
     setLoading(true);
@@ -59,20 +81,12 @@ const App: React.FC = () => {
       const jokeSnapshot = await getDocs(query(collection(db, 'jokes'), limit(1)));
       if (!jokeSnapshot.empty) {
         const jokeData = jokeSnapshot.docs[0].data() as Joke;
-        const { id, ...restOfJokeData } = jokeData;  // Extract id and keep the rest of the data
+        const { id, ...restOfJokeData } = jokeData;
         setJokeOfTheDay({ id: jokeSnapshot.docs[0].id, ...restOfJokeData });
       }
     };
     fetchJokeOfTheDay();
   }, []);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-  }, [darkMode]);
 
   const getRandomJoke = () => {
     setCurrentJoke(jokes[Math.floor(Math.random() * jokes.length)]);
@@ -128,61 +142,88 @@ const App: React.FC = () => {
     }
   };
 
+  const handleEmailSignIn = () => {
+    fetchJokes();
+  };
+
+  const handleCategoryChange = (event: SelectChangeEvent) => {
+    setSelectedCategory(event.target.value as string);
+  };
+
   if (loading) return <div>Loading jokes...</div>;
   if (error) return <div>{error}</div>;
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Dad Jokes Extravaganza</h1>
-        <nav>
-          {user ? (
-            <>
-              <button onClick={signOut}>Sign Out</button>
-              <button onClick={() => setShowSubmissionForm(!showSubmissionForm)}>
-                {showSubmissionForm ? 'Cancel' : 'Submit a Joke'}
-              </button>
-            </>
-          ) : (
-            <button onClick={signIn}>Sign In with Google</button>
-          )}
-          <button onClick={() => setDarkMode(!darkMode)}>
-            {darkMode ? 'Light Mode' : 'Dark Mode'}
-          </button>
-        </nav>
-      </header>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <div className="App">
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Dad Jokes Extravaganza
+            </Typography>
+            {user ? (
+              <>
+                <Button color="inherit" onClick={signOut}>Sign Out</Button>
+                <Button color="inherit" onClick={() => setShowSubmissionForm(!showSubmissionForm)}>
+                  {showSubmissionForm ? 'Cancel' : 'Submit a Joke'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button color="inherit" onClick={signIn}>Sign In with Google</Button>
+                <Auth onSignIn={handleEmailSignIn} />
+              </>
+            )}
+            <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(!darkMode)} color="inherit">
+              {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
+          </Toolbar>
+        </AppBar>
 
-      <main className="App-main">
-        <select 
-          value={selectedCategory} 
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          <option value="all">All Categories</option>
-          <option value="pun">Pun</option>
-          <option value="wordplay">Wordplay</option>
-          <option value="science">Science</option>
-          <option value="animals">Animals</option>
-        </select>
+        <Container maxWidth="md">
+          <Box sx={{ my: 4 }}>
+            <FormControl fullWidth>
+              <InputLabel id="category-select-label">Category</InputLabel>
+              <Select
+                labelId="category-select-label"
+                id="category-select"
+                value={selectedCategory}
+                label="Category"
+                onChange={handleCategoryChange}
+              >
+                <MenuItem value="all">All Categories</MenuItem>
+                <MenuItem value="pun">Pun</MenuItem>
+                <MenuItem value="wordplay">Wordplay</MenuItem>
+                <MenuItem value="science">Science</MenuItem>
+                <MenuItem value="animals">Animals</MenuItem>
+              </Select>
+            </FormControl>
 
-        {jokeOfTheDay && (
-          <div className="joke-of-the-day">
-            <h2>Joke of the Day</h2>
-            <JokeDisplay joke={jokeOfTheDay} onRate={rateJoke} />
-          </div>
-        )}
+            {jokeOfTheDay && (
+              <Box sx={{ my: 4 }}>
+                <Typography variant="h5" component="h2" gutterBottom>
+                  Joke of the Day
+                </Typography>
+                <JokeDisplay joke={jokeOfTheDay} onRate={rateJoke} />
+              </Box>
+            )}
 
-        {showSubmissionForm && user ? (
-          <JokeSubmissionForm onSubmit={submitJoke} />
-        ) : (
-          <>
-            {currentJoke && <JokeDisplay joke={currentJoke} onRate={rateJoke} />}
-            <button onClick={getRandomJoke}>Get Another Joke</button>
-          </>
-        )}
-      </main>
-    </div>
+            {showSubmissionForm && user ? (
+              <JokeSubmissionForm onSubmit={submitJoke} />
+            ) : (
+              <>
+                {currentJoke && <JokeDisplay joke={currentJoke} onRate={rateJoke} />}
+                <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
+                  Get Another Joke
+                </Button>
+              </>
+            )}
+          </Box>
+        </Container>
+      </div>
+    </ThemeProvider>
   );
 };
 
 export default App;
-

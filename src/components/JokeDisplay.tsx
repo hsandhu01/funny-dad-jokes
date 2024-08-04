@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card, CardContent, Typography, Rating, Box } from '@mui/material';
 
 interface JokeDisplayProps {
   joke: {
@@ -14,19 +15,37 @@ interface JokeDisplayProps {
 
 const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate }) => {
   return (
-    <div className="joke-container">
-      <span className="category-tag">{joke.category}</span>
-      <h2>{joke.setup}</h2>
-      <p>{joke.punchline}</p>
-      <p>Average Rating: {joke.rating.toFixed(1)} ({joke.ratingCount} votes)</p>
-      <div className="rating">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button key={star} onClick={() => onRate(star)}>
-            {star} ⭐
-          </button>
-        ))}
-      </div>
-    </div>
+    <Card>
+      <CardContent>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          {joke.category}
+        </Typography>
+        <Typography variant="h5" component="div">
+          {joke.setup}
+        </Typography>
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          {joke.punchline}
+        </Typography>
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ mr: 1 }}>
+            Rate this joke:
+          </Typography>
+          <Rating
+            name="joke-rating"
+            value={joke.rating}
+            precision={0.5}
+            onChange={(event, newValue) => {
+              if (newValue !== null) {
+                onRate(newValue);
+              }
+            }}
+          />
+          <Typography variant="body2" sx={{ ml: 1 }}>
+            ({joke.ratingCount} votes)
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 
