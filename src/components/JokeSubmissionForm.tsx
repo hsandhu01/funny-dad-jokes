@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
 
 interface JokeSubmissionFormProps {
   onSubmit: (joke: { setup: string; punchline: string; category: string }) => void;
@@ -18,34 +19,45 @@ const JokeSubmissionForm: React.FC<JokeSubmissionFormProps> = ({ onSubmit }) => 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="joke-submission-form">
-      <input
-        type="text"
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        Submit a New Joke
+      </Typography>
+      <TextField
+        fullWidth
+        label="Setup"
         value={setup}
         onChange={(e) => setSetup(e.target.value)}
-        placeholder="Setup"
         required
+        margin="normal"
       />
-      <input
-        type="text"
+      <TextField
+        fullWidth
+        label="Punchline"
         value={punchline}
         onChange={(e) => setPunchline(e.target.value)}
-        placeholder="Punchline"
         required
+        margin="normal"
       />
-      <select
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-        required
-      >
-        <option value="">Select Category</option>
-        <option value="pun">Pun</option>
-        <option value="wordplay">Wordplay</option>
-        <option value="science">Science</option>
-        <option value="animals">Animals</option>
-      </select>
-      <button type="submit">Submit Joke</button>
-    </form>
+      <FormControl fullWidth margin="normal">
+        <InputLabel id="category-select-label">Category</InputLabel>
+        <Select
+          labelId="category-select-label"
+          value={category}
+          label="Category"
+          onChange={(e) => setCategory(e.target.value)}
+          required
+        >
+          <MenuItem value="pun">Pun</MenuItem>
+          <MenuItem value="wordplay">Wordplay</MenuItem>
+          <MenuItem value="science">Science</MenuItem>
+          <MenuItem value="animals">Animals</MenuItem>
+        </Select>
+      </FormControl>
+      <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
+        Submit Joke
+      </Button>
+    </Box>
   );
 };
 

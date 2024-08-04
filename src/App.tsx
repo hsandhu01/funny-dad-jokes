@@ -20,6 +20,7 @@ import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { AnimatePresence } from 'framer-motion';
 import './App.css';
 
 interface Joke {
@@ -89,7 +90,9 @@ const App: React.FC = () => {
   }, []);
 
   const getRandomJoke = () => {
-    setCurrentJoke(jokes[Math.floor(Math.random() * jokes.length)]);
+    const newJoke = jokes[Math.floor(Math.random() * jokes.length)];
+    setCurrentJoke(null);  // Set to null first to trigger exit animation
+    setTimeout(() => setCurrentJoke(newJoke), 500);  // Set new joke after exit animation
   };
 
   const rateJoke = async (rating: number) => {
@@ -212,13 +215,14 @@ const App: React.FC = () => {
             {showSubmissionForm && user ? (
               <JokeSubmissionForm onSubmit={submitJoke} />
             ) : (
-              <>
-                {currentJoke && <JokeDisplay joke={currentJoke} onRate={rateJoke} />}
-                <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
-                  Get Another Joke
-                </Button>
-              </>
+              <AnimatePresence mode="wait">
+                {currentJoke && <JokeDisplay key={currentJoke.id} joke={currentJoke} onRate={rateJoke} />}
+              </AnimatePresence>
             )}
+            
+            <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
+              Get Another Joke
+            </Button>
           </Box>
         </Container>
       </div>
