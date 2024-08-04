@@ -24,3 +24,7 @@ yarn-error.log*
 # IDE
 .vscode
 .idea
+
+#others
+uploadJokes.js
+uploadJokes.ts
