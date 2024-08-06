@@ -1,56 +1,64 @@
-body {
-  font-family: 'Comic Sans MS', cursive, sans-serif;
-  background-color: #f0f8ff;
-  color: #333;
-}
-
 .App {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .App-header {
-  background-color: #4a69bd;
-  color: white;
+  background-color: #282c34;
   padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
+  color: white;
 }
 
 .App-main {
-  background-color: white;
+  flex-grow: 1;
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-button {
-  background-color: #6ab04c;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-button:hover {
-  background-color: #4a8c3a;
-}
-
-.category-tag {
-  background-color: #f9ca24;
-  color: #333;
-  padding: 5px 10px;
-  border-radius: 15px;
-  font-size: 0.8em;
-  display: inline-block;
-  margin-bottom: 10px;
+  background-color: #f0f0f0;
 }
 
 .joke-container {
-  animation: fadeIn 0.5s;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.joke-container:hover {
+  transform: translateY(-5px);
+}
+
+.category-tag {
+  display: inline-block;
+  background-color: #61dafb;
+  color: #282c34;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  margin-bottom: 10px;
+}
+
+.rating-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.rating-button {
+  background-color: #61dafb;
+  border: none;
+  color: #282c34;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.rating-button:hover {
+  background-color: #21a1f1;
 }
 
 @keyframes fadeIn {
@@ -58,41 +66,6 @@ button:hover {
   to { opacity: 1; }
 }
 
-.dark-mode {
-  background-color: #2c3e50;
-  color: #ecf0f1;
-}
-
-.dark-mode .App-main {
-  background-color: #34495e;
-}
-
-.dark-mode button {
-  background-color: #e74c3c;
-}
-
-.dark-mode button:hover {
-  background-color: #c0392b;
-}
-
-.joke-of-the-day {
-  border: 2px solid #f9ca24;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-
-.joke-submission-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.joke-submission-form input,
-.joke-submission-form select {
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ddd;
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
 }

@@ -7,6 +7,8 @@ import JokeDisplay from './components/JokeDisplay';
 import JokeSubmissionForm from './components/JokeSubmissionForm';
 import Auth from './components/Auth';
 import UserProfile from './components/UserProfile';
+import Leaderboard from './components/Leaderboard';
+import JokeSearch from './components/JokeSearch';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import AppBar from '@mui/material/AppBar';
@@ -287,6 +289,9 @@ const App: React.FC = () => {
                   <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
                     Get Another Joke
                   </Button>
+
+                  <Leaderboard />
+                  <JokeSearch />
                 </Box>
               } />
               <Route path="/profile" element={<UserProfile />} />
