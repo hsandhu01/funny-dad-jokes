@@ -26,6 +26,7 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 
 interface Joke {
   id: string;

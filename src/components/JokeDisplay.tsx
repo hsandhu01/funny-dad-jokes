@@ -8,6 +8,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import VoiceReader from './VoiceReader';
 
 interface JokeDisplayProps {
   joke: {
@@ -53,6 +54,9 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
             <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
               {joke.punchline}
             </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <VoiceReader text={`${joke.setup} ${joke.punchline}`} />
+            </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 2 }}>
               <Typography variant="body2" sx={{ mb: 1 }}>
                 Rate this joke:
