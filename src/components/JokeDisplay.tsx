@@ -37,8 +37,6 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
   const shareUrl = `${window.location.origin}/joke/${joke.id}`;
   const shareTitle = `Check out this dad joke: ${joke.setup}`;
 
-  console.log("Rendering JokeDisplay with jokeId:", joke.id);
-
   return (
     <AnimatePresence mode="wait">
       <motion.div

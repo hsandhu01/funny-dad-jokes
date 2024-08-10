@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Box, Typography, Tabs, Tab, CircularProgress, List, ListItem, ListItemText } from '@mui/material';
 import JokeDisplay from './JokeDisplay';
@@ -12,14 +12,13 @@ interface Joke {
   category: string;
   rating: number;
   ratingCount: number;
-  userId: string; 
+  userId: string;
 }
 
 interface Comment {
   id: string;
   text: string;
   jokeId: string;
-  userId: string;
   createdAt: Date;
 }
 
@@ -33,14 +32,15 @@ const UserProfile: React.FC = () => {
 
   useEffect(() => {
     fetchUserJokes();
-    fetchAchievements();
     fetchUserComments();
+    fetchAchievements();
   }, []);
 
   const fetchUserJokes = async () => {
     if (auth.currentUser) {
       setLoading(true);
       try {
+        // Fetch submitted jokes
         const submittedQuery = query(
           collection(db, 'jokes'),
           where('userId', '==', auth.currentUser.uid)
@@ -49,6 +49,7 @@ const UserProfile: React.FC = () => {
         const submittedJokesList = submittedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));
         setSubmittedJokes(submittedJokesList);
 
+        // Fetch favorite jokes
         const favoritesQuery = query(
           collection(db, 'favorites'),
           where('userId', '==', auth.currentUser.uid)
@@ -75,6 +76,20 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  const fetchUserComments = async () => {
+    if (auth.currentUser) {
+      const commentsRef = collection(db, 'comments');
+      const q = query(commentsRef, where('userId', '==', auth.currentUser.uid));
+      const snapshot = await getDocs(q);
+      const userCommentsList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date()
+      } as Comment));
+      setUserComments(userCommentsList);
+    }
+  };
+
   const fetchAchievements = async () => {
     if (auth.currentUser) {
       const achievementsRef = collection(db, 'achievements');
@@ -82,43 +97,6 @@ const UserProfile: React.FC = () => {
       const snapshot = await getDocs(q);
       const userAchievements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Achievement));
       setAchievements(userAchievements);
-    }
-  };
-
-  const fetchUserComments = async () => {
-    if (auth.currentUser) {
-      const commentsRef = collection(db, 'comments');
-      const q = query(commentsRef, where('userId', '==', auth.currentUser.uid));
-      const snapshot = await getDocs(q);
-      const userCommentsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
-      setUserComments(userCommentsList);
-    }
-  };
-
-  const handleToggleFavorite = async (joke: Joke) => {
-    if (auth.currentUser) {
-      const favoritesRef = collection(db, 'favorites');
-      const favoriteQuery = query(
-        favoritesRef,
-        where('userId', '==', auth.currentUser.uid),
-        where('jokeId', '==', joke.id)
-      );
-      const favoriteSnapshot = await getDocs(favoriteQuery);
-
-      try {
-        if (favoriteSnapshot.empty) {
-          await addDoc(favoritesRef, {
-            userId: auth.currentUser.uid,
-            jokeId: joke.id
-          });
-        } else {
-          const favoriteDoc = favoriteSnapshot.docs[0];
-          await deleteDoc(doc(db, 'favorites', favoriteDoc.id));
-        }
-        await fetchUserJokes();
-      } catch (error) {
-        console.error("Error toggling favorite:", error);
-      }
     }
   };
 
@@ -152,8 +130,8 @@ const UserProfile: React.FC = () => {
                 key={joke.id} 
                 joke={joke} 
                 onRate={() => {}} 
-                onToggleFavorite={() => handleToggleFavorite(joke)}
-                isFavorite={favoriteJokes.some(fav => fav.id === joke.id)}
+                onToggleFavorite={() => {}}
+                isFavorite={false}
               />
             ))
           ) : (
@@ -167,7 +145,7 @@ const UserProfile: React.FC = () => {
                 key={joke.id} 
                 joke={joke} 
                 onRate={() => {}} 
-                onToggleFavorite={() => handleToggleFavorite(joke)}
+                onToggleFavorite={() => {}}
                 isFavorite={true}
               />
             ))
@@ -178,11 +156,11 @@ const UserProfile: React.FC = () => {
         {activeTab === 2 && (
           userComments.length > 0 ? (
             <List>
-              {userComments.map(comment => (
+              {userComments.map((comment) => (
                 <ListItem key={comment.id}>
                   <ListItemText
                     primary={comment.text}
-                    secondary={`On joke: ${comment.jokeId} - ${new Date(comment.createdAt).toLocaleString()}`}
+                    secondary={`On joke: ${comment.jokeId} - ${comment.createdAt.toLocaleString()}`}
                   />
                 </ListItem>
               ))}

@@ -27,6 +27,8 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
+import CategoriesPage from './components/CategoriesPage';
+import CategoryJokesPage from './components/CategoryJokesPage';
 
 interface Joke {
   id: string;
@@ -215,6 +217,9 @@ const App: React.FC = () => {
                   Dad Jokes Extravaganza
                 </Link>
               </Typography>
+              <Button color="inherit" component={Link} to="/categories">
+                Categories
+              </Button>
               {user ? (
                 <>
                   <Button color="inherit" component={Link} to="/profile">Profile</Button>
@@ -299,6 +304,8 @@ const App: React.FC = () => {
                 </Box>
               } />
               <Route path="/profile" element={<UserProfile />} />
+              <Route path="/categories" element={<CategoriesPage />} />
+              <Route path="/category/:categoryName" element={<CategoryJokesPage />} />
             </Routes>
           </Container>
         </div>
