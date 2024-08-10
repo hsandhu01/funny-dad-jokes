@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Box, Typography, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Box, Typography, Tabs, Tab, CircularProgress, List, ListItem, ListItemText } from '@mui/material';
 import JokeDisplay from './JokeDisplay';
+import Achievements, { Achievement } from './Achievements';
 
 interface Joke {
   id: string;
@@ -14,21 +15,32 @@ interface Joke {
   userId: string; 
 }
 
+interface Comment {
+  id: string;
+  text: string;
+  jokeId: string;
+  userId: string;
+  createdAt: Date;
+}
+
 const UserProfile: React.FC = () => {
   const [submittedJokes, setSubmittedJokes] = useState<Joke[]>([]);
   const [favoriteJokes, setFavoriteJokes] = useState<Joke[]>([]);
+  const [userComments, setUserComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   useEffect(() => {
     fetchUserJokes();
+    fetchAchievements();
+    fetchUserComments();
   }, []);
 
   const fetchUserJokes = async () => {
     if (auth.currentUser) {
       setLoading(true);
       try {
-        // Fetch submitted jokes
         const submittedQuery = query(
           collection(db, 'jokes'),
           where('userId', '==', auth.currentUser.uid)
@@ -37,7 +49,6 @@ const UserProfile: React.FC = () => {
         const submittedJokesList = submittedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));
         setSubmittedJokes(submittedJokesList);
 
-        // Fetch favorite jokes
         const favoritesQuery = query(
           collection(db, 'favorites'),
           where('userId', '==', auth.currentUser.uid)
@@ -48,7 +59,7 @@ const UserProfile: React.FC = () => {
         if (favoriteJokeIds.length > 0) {
           const favoriteJokesQuery = query(
             collection(db, 'jokes'),
-            where('__name__', 'in', favoriteJokeIds) // Use __name__ instead of id
+            where('__name__', 'in', favoriteJokeIds)
           );
           const favoriteJokesSnapshot = await getDocs(favoriteJokesQuery);
           const favoriteJokesList = favoriteJokesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));
@@ -64,6 +75,26 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  const fetchAchievements = async () => {
+    if (auth.currentUser) {
+      const achievementsRef = collection(db, 'achievements');
+      const q = query(achievementsRef, where('userId', '==', auth.currentUser.uid));
+      const snapshot = await getDocs(q);
+      const userAchievements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Achievement));
+      setAchievements(userAchievements);
+    }
+  };
+
+  const fetchUserComments = async () => {
+    if (auth.currentUser) {
+      const commentsRef = collection(db, 'comments');
+      const q = query(commentsRef, where('userId', '==', auth.currentUser.uid));
+      const snapshot = await getDocs(q);
+      const userCommentsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
+      setUserComments(userCommentsList);
+    }
+  };
+
   const handleToggleFavorite = async (joke: Joke) => {
     if (auth.currentUser) {
       const favoritesRef = collection(db, 'favorites');
@@ -76,17 +107,14 @@ const UserProfile: React.FC = () => {
 
       try {
         if (favoriteSnapshot.empty) {
-          // Add to favorites
           await addDoc(favoritesRef, {
             userId: auth.currentUser.uid,
             jokeId: joke.id
           });
         } else {
-          // Remove from favorites
           const favoriteDoc = favoriteSnapshot.docs[0];
           await deleteDoc(doc(db, 'favorites', favoriteDoc.id));
         }
-        // Refresh the jokes lists
         await fetchUserJokes();
       } catch (error) {
         console.error("Error toggling favorite:", error);
@@ -114,6 +142,7 @@ const UserProfile: React.FC = () => {
       <Tabs value={activeTab} onChange={handleTabChange} centered>
         <Tab label="Submitted Jokes" />
         <Tab label="Favorite Jokes" />
+        <Tab label="Your Comments" />
       </Tabs>
       <Box sx={{ p: 3 }}>
         {activeTab === 0 && (
@@ -146,7 +175,24 @@ const UserProfile: React.FC = () => {
             <Typography>You haven't favorited any jokes yet.</Typography>
           )
         )}
+        {activeTab === 2 && (
+          userComments.length > 0 ? (
+            <List>
+              {userComments.map(comment => (
+                <ListItem key={comment.id}>
+                  <ListItemText
+                    primary={comment.text}
+                    secondary={`On joke: ${comment.jokeId} - ${new Date(comment.createdAt).toLocaleString()}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography>You haven't made any comments yet.</Typography>
+          )
+        )}
       </Box>
+      <Achievements achievements={achievements} />
     </Box>
   );
 };

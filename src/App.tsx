@@ -26,6 +26,7 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
+import { checkAchievements } from './utils/achievementChecker';
 
 interface Joke {
   id: string;
@@ -184,6 +185,7 @@ const App: React.FC = () => {
         });
         setShowSubmissionForm(false);
         fetchJokes();
+        await checkAchievements(user.uid);
       } catch (error) {
         console.error('Error submitting joke', error);
       }

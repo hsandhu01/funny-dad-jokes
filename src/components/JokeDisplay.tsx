@@ -9,6 +9,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import VoiceReader from './VoiceReader';
+import CommentSection from './CommentSection';
 
 interface JokeDisplayProps {
   joke: {
@@ -35,6 +36,8 @@ const emojis = [
 const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorite, isFavorite }) => {
   const shareUrl = `${window.location.origin}/joke/${joke.id}`;
   const shareTitle = `Check out this dad joke: ${joke.setup}`;
+
+  console.log("Rendering JokeDisplay with jokeId:", joke.id);
 
   return (
     <AnimatePresence mode="wait">
@@ -109,6 +112,7 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
                 {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
               </IconButton>
             </Box>
+            <CommentSection jokeId={joke.id} />
           </CardContent>
         </Card>
       </motion.div>
