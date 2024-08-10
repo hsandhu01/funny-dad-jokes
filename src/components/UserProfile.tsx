@@ -11,6 +11,7 @@ interface Joke {
   category: string;
   rating: number;
   ratingCount: number;
+  userId: string; 
 }
 
 const UserProfile: React.FC = () => {
@@ -47,7 +48,7 @@ const UserProfile: React.FC = () => {
         if (favoriteJokeIds.length > 0) {
           const favoriteJokesQuery = query(
             collection(db, 'jokes'),
-            where('id', 'in', favoriteJokeIds)
+            where('__name__', 'in', favoriteJokeIds) // Use __name__ instead of id
           );
           const favoriteJokesSnapshot = await getDocs(favoriteJokesQuery);
           const favoriteJokesList = favoriteJokesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));

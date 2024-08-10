@@ -26,7 +26,6 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 
 interface Joke {
   id: string;
@@ -35,6 +34,7 @@ interface Joke {
   category: string;
   rating: number;
   ratingCount: number;
+  userId: string;
 }
 
 const App: React.FC = () => {
@@ -173,11 +173,12 @@ const App: React.FC = () => {
     }
   };
 
-  const submitJoke = async (joke: Omit<Joke, 'id' | 'rating' | 'ratingCount'>) => {
+  const submitJoke = async (joke: Omit<Joke, 'id' | 'rating' | 'ratingCount' | 'userId'>) => {
     if (user) {
       try {
         await addDoc(collection(db, 'jokes'), {
           ...joke,
+          userId: user.uid,
           rating: 0,
           ratingCount: 0,
         });

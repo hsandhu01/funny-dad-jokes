@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
 
+
+interface Joke {
+  id: string;
+  setup: string;
+  punchline: string;
+  category: string;
+  rating: number;
+  ratingCount: number;
+  userId: string;
+}
+
 interface JokeSubmissionFormProps {
-  onSubmit: (joke: { setup: string; punchline: string; category: string }) => void;
+  onSubmit: (joke: Omit<Joke, 'id' | 'rating' | 'ratingCount' | 'userId'>) => Promise<void>;
 }
 
 const JokeSubmissionForm: React.FC<JokeSubmissionFormProps> = ({ onSubmit }) => {
@@ -10,9 +21,9 @@ const JokeSubmissionForm: React.FC<JokeSubmissionFormProps> = ({ onSubmit }) => 
   const [punchline, setPunchline] = useState('');
   const [category, setCategory] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ setup, punchline, category });
+    await onSubmit({ setup, punchline, category });
     setSetup('');
     setPunchline('');
     setCategory('');
