@@ -21,7 +21,7 @@ interface JokeDisplayProps {
     ratingCount: number;
   };
   onRate: (rating: number) => void;
-  onToggleFavorite: () => void;
+  onToggleFavorite: (jokeId: string) => void;
   isFavorite: boolean;
 }
 
@@ -106,7 +106,7 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
                   <EmailIcon />
                 </IconButton>
               </EmailShareButton>
-              <IconButton onClick={onToggleFavorite} color="primary" aria-label="toggle favorite">
+              <IconButton onClick={() => onToggleFavorite(joke.id)} color="primary" aria-label="toggle favorite">
                 {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
               </IconButton>
             </Box>

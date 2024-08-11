@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Box, Typography, Tabs, Tab, CircularProgress, List, ListItem, ListItemText } from '@mui/material';
 import JokeDisplay from './JokeDisplay';
 import Achievements, { Achievement } from './Achievements';
+import UserLevel from './UserLevel';
+import { UserData, initializeUserData } from '../utils/userUtils';
 
 interface Joke {
   id: string;
@@ -29,18 +31,42 @@ const UserProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
+    fetchUserData();
     fetchUserJokes();
     fetchUserComments();
     fetchAchievements();
   }, []);
 
+  const fetchUserData = async () => {
+    if (auth.currentUser) {
+      try {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const data = userSnap.data() as UserData;
+          console.log("User data:", data);
+          setUserData(data);
+        } else {
+          console.log("No user document found. Creating one.");
+          await initializeUserData(auth.currentUser.uid);
+          const newUserSnap = await getDoc(userRef);
+          setUserData(newUserSnap.data() as UserData);
+        }
+      } catch (error) {
+        console.error("Error fetching/creating user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const fetchUserJokes = async () => {
     if (auth.currentUser) {
-      setLoading(true);
       try {
-        // Fetch submitted jokes
         const submittedQuery = query(
           collection(db, 'jokes'),
           where('userId', '==', auth.currentUser.uid)
@@ -49,7 +75,6 @@ const UserProfile: React.FC = () => {
         const submittedJokesList = submittedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));
         setSubmittedJokes(submittedJokesList);
 
-        // Fetch favorite jokes
         const favoritesQuery = query(
           collection(db, 'favorites'),
           where('userId', '==', auth.currentUser.uid)
@@ -70,8 +95,6 @@ const UserProfile: React.FC = () => {
         }
       } catch (error) {
         console.error("Error fetching user jokes:", error);
-      } finally {
-        setLoading(false);
       }
     }
   };
@@ -117,6 +140,13 @@ const UserProfile: React.FC = () => {
       <Typography variant="h4" gutterBottom>
         Your Profile
       </Typography>
+      {userData && (
+        <UserLevel
+          level={userData.level}
+          experience={userData.experience}
+          experienceToNextLevel={(userData.level + 1) * 100}
+        />
+      )}
       <Tabs value={activeTab} onChange={handleTabChange} centered>
         <Tab label="Submitted Jokes" />
         <Tab label="Favorite Jokes" />

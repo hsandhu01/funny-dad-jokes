@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase'; // Adjust this import path if needed
+import { auth } from '../firebase';
+import { initializeUserData } from '../utils/userUtils';
 
 interface AuthProps {
   onSignIn: () => void;
@@ -12,20 +13,21 @@ const Auth: React.FC<AuthProps> = ({ onSignIn }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
-        if (isSignUp) {
-            await createUserWithEmailAndPassword(auth, email, password);
-        } else {
-            await signInWithEmailAndPassword(auth, email, password);
-        }
-        onSignIn();
+      if (isSignUp) {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await initializeUserData(userCredential.user.uid);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      onSignIn();
     } catch (err) {
-        setError((err as Error).message);
+      setError((err as Error).message);
     }
-};
+  };
 
   return (
     <div className="auth-container">

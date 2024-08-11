@@ -1,0 +1,47 @@
+import { db } from '../firebase';
+import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+
+interface UserData {
+    uid: string;
+    level: number;
+    experience: number;
+    totalJokesSubmitted: number;
+    totalRatingsReceived: number;
+  }
+
+const EXPERIENCE_PER_LEVEL = 100;
+const EXPERIENCE_PER_JOKE = 10;
+const EXPERIENCE_PER_RATING = 1;
+
+export const calculateLevel = (experience: number): number => {
+  return Math.floor(experience / EXPERIENCE_PER_LEVEL) + 1;
+};
+
+export const calculateExperienceToNextLevel = (level: number): number => {
+  return level * EXPERIENCE_PER_LEVEL;
+};
+
+export const updateUserLevel = async (userId: string, action: 'submitJoke' | 'receiveRating') => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+  
+    if (userSnap.exists()) {
+      const userData = userSnap.data() as UserData;
+      let experienceGain = action === 'submitJoke' ? EXPERIENCE_PER_JOKE : EXPERIENCE_PER_RATING;
+      
+      const newExperience = userData.experience + experienceGain;
+      const newLevel = calculateLevel(newExperience);
+      
+      await updateDoc(userRef, {
+        experience: increment(experienceGain),
+        level: newLevel,
+        [action === 'submitJoke' ? 'totalJokesSubmitted' : 'totalRatingsReceived']: increment(1)
+      });
+  
+      return {
+        level: newLevel,
+        experience: newExperience,
+        experienceToNextLevel: calculateExperienceToNextLevel(newLevel)
+      };
+    }
+  };
