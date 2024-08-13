@@ -96,7 +96,7 @@ We welcome contributions to the Funny Dad Jokes Extravaganza! Please follow thes
 
 ## 📜 License
 
-This project is licensed under the MIT License
+This project is licensed under the MIT License.
 
 ## 📞 Contact
 
