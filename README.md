@@ -54,7 +54,7 @@ A modern, interactive web application for sharing, rating, and enjoying dad joke
 
 ## 📁 Project Structure
 
-\`\`\`plaintext
+```
 src/
 ├── components/
 │   ├── JokeDisplay.tsx
@@ -72,7 +72,7 @@ src/
 ├── types/
 ├── utils/
 └── App.tsx
-\`\`\`
+```
 
 ## 🔜 Upcoming Features
 
