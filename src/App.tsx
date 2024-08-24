@@ -10,25 +10,21 @@ import UserProfile from './components/UserProfile';
 import Leaderboard from './components/Leaderboard';
 import JokeSearch from './components/JokeSearch';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import Box from '@mui/material/Box';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import IconButton from '@mui/material/IconButton';
+import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import GoogleIcon from '@mui/icons-material/Google';
+import HomeIcon from '@mui/icons-material/Home';
+import CategoryIcon from '@mui/icons-material/Category';
+import AddIcon from '@mui/icons-material/Add';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
 import { updateUserLevel } from './utils/userLevelUtils';
 import logo from '../src/assets/dad-jokes-logo.png';
+import { SelectChangeEvent } from '@mui/material/Select';
 
 interface Joke {
   id: string;
@@ -94,6 +90,8 @@ const App: React.FC = () => {
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [favoriteJokes, setFavoriteJokes] = useState<string[]>([]);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const theme = getTheme(darkMode ? 'dark' : 'light');
 
@@ -243,6 +241,47 @@ const App: React.FC = () => {
     setSelectedCategory(event.target.value as string);
   };
 
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const toggleDrawer = (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
+    if (event.type === 'keydown' && ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')) {
+      return;
+    }
+    setDrawerOpen(open);
+  };
+
+  const drawerContent = (
+    <Box
+      sx={{ width: 250 }}
+      role="presentation"
+      onClick={toggleDrawer(false)}
+      onKeyDown={toggleDrawer(false)}
+    >
+      <List>
+        <ListItem button component={Link} to="/">
+          <ListItemIcon><HomeIcon /></ListItemIcon>
+          <ListItemText primary="Home" />
+        </ListItem>
+        <ListItem button component={Link} to="/categories">
+          <ListItemIcon><CategoryIcon /></ListItemIcon>
+          <ListItemText primary="Categories" />
+        </ListItem>
+        {user && (
+          <ListItem button onClick={() => setShowSubmissionForm(!showSubmissionForm)}>
+            <ListItemIcon><AddIcon /></ListItemIcon>
+            <ListItemText primary="Submit a Joke" />
+          </ListItem>
+        )}
+      </List>
+    </Box>
+  );
+
   if (loading) return <div>Loading jokes...</div>;
   if (error) return <div>{error}</div>;
 
@@ -252,46 +291,91 @@ const App: React.FC = () => {
         <CssBaseline />
         <div className="App">
           <AppBar position="static">
-            <Toolbar sx={{ minHeight: '70px' }}>
-              <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexGrow: 1 }}>
+            <Toolbar sx={{ justifyContent: 'space-between' }}>
+              <IconButton
+                size="large"
+                edge="start"
+                color="inherit"
+                aria-label="menu"
+                sx={{ mr: 2 }}
+                onClick={toggleDrawer(true)}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
                 <img 
                   src={logo} 
                   alt="Really Funny Dad Jokes" 
-                  style={{ 
-                    height: '60px', 
-                    width: '60px', 
-                    marginRight: '15px',
-                    objectFit: 'cover',
-                    borderRadius: '50%'
-                  }} 
+                  style={{ height: '40px', marginRight: '10px' }}
                 />
-                <Typography 
-                  variant="h5" 
-                  component="div" 
-                  sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' }, color: 'white', fontSize: '1.5rem' }}
-                >
+                <Typography variant="h6" component="div">
                   Really Funny Dad Jokes
                 </Typography>
               </Link>
-              {user ? (
-                <>
-                  <Button color="inherit" component={Link} to="/profile">Profile</Button>
-                  <Button color="inherit" onClick={signOut}>Sign Out</Button>
-                  <Button color="inherit" onClick={() => setShowSubmissionForm(!showSubmissionForm)}>
-                    {showSubmissionForm ? 'Cancel' : 'Submit a Joke'}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button color="inherit" onClick={signIn}>Sign In with Google</Button>
-                  <Auth onSignIn={handleEmailSignIn} />
-                </>
-              )}
-              <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(!darkMode)} color="inherit">
-                {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-              </IconButton>
+              <Box>
+                {user ? (
+                  <>
+                    <Button color="inherit" component={Link} to="/profile">Profile</Button>
+                    <Button color="inherit" onClick={signOut}>Sign Out</Button>
+                  </>
+                ) : (
+                  <IconButton
+                    size="large"
+                    aria-label="account of current user"
+                    aria-controls="menu-appbar"
+                    aria-haspopup="true"
+                    onClick={handleMenu}
+                    color="inherit"
+                  >
+                    <AccountCircle />
+                  </IconButton>
+                )}
+                <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(!darkMode)} color="inherit">
+                  {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                </IconButton>
+              </Box>
             </Toolbar>
           </AppBar>
+
+          <Drawer
+            anchor="left"
+            open={drawerOpen}
+            onClose={toggleDrawer(false)}
+          >
+            {drawerContent}
+          </Drawer>
+
+          <Menu
+            id="menu-appbar"
+            anchorEl={anchorEl}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            open={Boolean(anchorEl)}
+            onClose={handleClose}
+            PaperProps={{
+              style: {
+                width: '250px',
+                padding: '8px',
+              },
+            }}
+          >
+            <MenuItem onClick={() => { signIn(); handleClose(); }}>
+              <Button fullWidth variant="outlined" startIcon={<GoogleIcon />}>
+                Sign in with Google
+              </Button>
+            </MenuItem>
+            <Divider sx={{ my: 1 }} />
+            <MenuItem>
+              <Auth onSignIn={handleEmailSignIn} onClose={handleClose} />
+            </MenuItem>
+          </Menu>
 
           <Container maxWidth="md">
             <Routes>
@@ -357,6 +441,7 @@ const App: React.FC = () => {
                 </Box>
               } />
               <Route path="/profile" element={<UserProfile />} />
+              <Route path="/categories" element={<Typography>Categories Page (To be implemented)</Typography>} />
             </Routes>
           </Container>
         </div>
