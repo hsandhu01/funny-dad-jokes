@@ -28,6 +28,7 @@ import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
 import { updateUserLevel } from './utils/userLevelUtils';
+import logo from '../src/assets/dad-jokes-logo.png';
 
 interface Joke {
   id: string;
@@ -38,6 +39,49 @@ interface Joke {
   ratingCount: number;
   userId: string;
 }
+
+const getTheme = (mode: 'light' | 'dark') => createTheme({
+  palette: {
+    mode,
+    primary: {
+      main: '#4A90E2',
+    },
+    secondary: {
+      main: '#F5A623',
+    },
+    background: {
+      default: mode === 'light' ? '#F5F5F5' : '#121212',
+      paper: mode === 'light' ? '#FFFFFF' : '#1E1E1E',
+    },
+    text: {
+      primary: mode === 'light' ? '#333333' : '#FFFFFF',
+      secondary: mode === 'light' ? '#666666' : '#B0B0B0',
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h1: { fontSize: '2.5rem', fontWeight: 500 },
+    h2: { fontSize: '2rem', fontWeight: 500 },
+    body1: { fontSize: '1rem' },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        },
+      },
+    },
+  },
+});
 
 const App: React.FC = () => {
   const [jokes, setJokes] = useState<Joke[]>([]);
@@ -51,11 +95,7 @@ const App: React.FC = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [favoriteJokes, setFavoriteJokes] = useState<string[]>([]);
 
-  const theme = createTheme({
-    palette: {
-      mode: darkMode ? 'dark' : 'light',
-    },
-  });
+  const theme = getTheme(darkMode ? 'dark' : 'light');
 
   const fetchJokes = useCallback(async () => {
     setLoading(true);
@@ -146,11 +186,9 @@ const App: React.FC = () => {
       const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
-        // Add to favorites
         await addDoc(favoritesRef, { userId: user.uid, jokeId });
         setFavoriteJokes([...favoriteJokes, jokeId]);
       } else {
-        // Remove from favorites
         const docToDelete = querySnapshot.docs[0];
         await deleteDoc(doc(db, 'favorites', docToDelete.id));
         setFavoriteJokes(favoriteJokes.filter(id => id !== jokeId));
@@ -180,7 +218,7 @@ const App: React.FC = () => {
   const submitJoke = async (joke: Omit<Joke, 'id' | 'rating' | 'ratingCount' | 'userId'>) => {
     if (user) {
       try {
-        const jokeRef = await addDoc(collection(db, 'jokes'), {
+        await addDoc(collection(db, 'jokes'), {
           ...joke,
           userId: user.uid,
           rating: 0,
@@ -214,12 +252,27 @@ const App: React.FC = () => {
         <CssBaseline />
         <div className="App">
           <AppBar position="static">
-            <Toolbar>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
+            <Toolbar sx={{ minHeight: '70px' }}>
+              <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexGrow: 1 }}>
+                <img 
+                  src={logo} 
+                  alt="Really Funny Dad Jokes" 
+                  style={{ 
+                    height: '60px', 
+                    width: '60px', 
+                    marginRight: '15px',
+                    objectFit: 'cover',
+                    borderRadius: '50%'
+                  }} 
+                />
+                <Typography 
+                  variant="h5" 
+                  component="div" 
+                  sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' }, color: 'white', fontSize: '1.5rem' }}
+                >
                   Really Funny Dad Jokes
-                </Link>
-              </Typography>
+                </Typography>
+              </Link>
               {user ? (
                 <>
                   <Button color="inherit" component={Link} to="/profile">Profile</Button>
