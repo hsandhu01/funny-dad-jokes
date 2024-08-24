@@ -217,7 +217,7 @@ const App: React.FC = () => {
             <Toolbar>
               <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                 <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
-                  Dad Jokes Extravaganza
+                  Really Funny Dad Jokes
                 </Link>
               </Typography>
               {user ? (
