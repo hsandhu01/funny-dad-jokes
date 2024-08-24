@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Box, Typography, Tabs, Tab, CircularProgress, List, ListItem, ListItemText } from '@mui/material';
 import JokeDisplay from './JokeDisplay';
@@ -34,34 +34,41 @@ const UserProfile: React.FC = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
-    fetchUserData();
+    const unsubscribe = fetchUserData();
     fetchUserJokes();
     fetchUserComments();
     fetchAchievements();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
-  const fetchUserData = async () => {
+  const fetchUserData = () => {
     if (auth.currentUser) {
-      try {
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        
-        if (userSnap.exists()) {
-          const data = userSnap.data() as UserData;
-          console.log("User data:", data);
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      return onSnapshot(userRef, (doc) => {
+        if (doc.exists()) {
+          const data = doc.data() as UserData;
+          console.log("User data updated:", data);
           setUserData(data);
         } else {
           console.log("No user document found. Creating one.");
-          await initializeUserData(auth.currentUser.uid);
-          const newUserSnap = await getDoc(userRef);
-          setUserData(newUserSnap.data() as UserData);
+          if (auth.currentUser) {
+            initializeUserData(auth.currentUser.uid).then(() => {
+              // The listener will pick up the new document automatically
+            });
+          } else {
+            console.error("User is not authenticated");
+          }
         }
-      } catch (error) {
-        console.error("Error fetching/creating user data:", error);
-      } finally {
         setLoading(false);
-      }
+      }, (error) => {
+        console.error("Error fetching user data:", error);
+        setLoading(false);
+      });
     }
+    return () => {};
   };
 
   const fetchUserJokes = async () => {

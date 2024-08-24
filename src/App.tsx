@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { collection, getDocs, query, where, CollectionReference, Query, DocumentData, addDoc, updateDoc, doc, deleteDoc, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where, CollectionReference, Query, addDoc, updateDoc, doc, deleteDoc, limit } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth } from './firebase';
 import JokeDisplay from './components/JokeDisplay';
@@ -27,8 +27,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
-import CategoriesPage from './components/CategoriesPage';
-import CategoryJokesPage from './components/CategoryJokesPage';
+import { updateUserLevel } from './utils/userLevelUtils';
 
 interface Joke {
   id: string;
@@ -130,8 +129,10 @@ const App: React.FC = () => {
       try {
         await updateDoc(jokeRef, { rating: newRating, ratingCount: newRatingCount });
         setCurrentJoke({ ...currentJoke, rating: newRating, ratingCount: newRatingCount });
+        const result = await updateUserLevel(currentJoke.userId, 'receiveRating');
+        console.log('User level updated after receiving rating:', result);
       } catch (error) {
-        console.error('Error updating joke rating', error);
+        console.error('Error updating joke rating or user level:', error);
       }
     } else if (!user) {
       alert('Please sign in to rate jokes');
@@ -179,7 +180,7 @@ const App: React.FC = () => {
   const submitJoke = async (joke: Omit<Joke, 'id' | 'rating' | 'ratingCount' | 'userId'>) => {
     if (user) {
       try {
-        await addDoc(collection(db, 'jokes'), {
+        const jokeRef = await addDoc(collection(db, 'jokes'), {
           ...joke,
           userId: user.uid,
           rating: 0,
@@ -188,8 +189,10 @@ const App: React.FC = () => {
         setShowSubmissionForm(false);
         fetchJokes();
         await checkAchievements(user.uid);
+        const result = await updateUserLevel(user.uid, 'submitJoke');
+        console.log('User level updated after submitting joke:', result);
       } catch (error) {
-        console.error('Error submitting joke', error);
+        console.error('Error submitting joke or updating user level:', error);
       }
     }
   };
@@ -217,9 +220,6 @@ const App: React.FC = () => {
                   Dad Jokes Extravaganza
                 </Link>
               </Typography>
-              <Button color="inherit" component={Link} to="/categories">
-                Categories
-              </Button>
               {user ? (
                 <>
                   <Button color="inherit" component={Link} to="/profile">Profile</Button>
@@ -304,8 +304,6 @@ const App: React.FC = () => {
                 </Box>
               } />
               <Route path="/profile" element={<UserProfile />} />
-              <Route path="/categories" element={<CategoriesPage />} />
-              <Route path="/category/:categoryName" element={<CategoryJokesPage />} />
             </Routes>
           </Container>
         </div>
