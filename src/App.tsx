@@ -3,12 +3,13 @@ import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { collection, getDocs, query, where, CollectionReference, Query, addDoc, updateDoc, doc, deleteDoc, limit } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth } from './firebase';
-import JokeDisplay from './components/JokeDisplay';
-import JokeSubmissionForm from './components/JokeSubmissionForm';
-import Auth from './components/Auth';
-import UserProfile from './components/UserProfile';
-import Leaderboard from './components/Leaderboard';
-import JokeSearch from './components/JokeSearch';
+import JokeDisplay from '../src/components/JokeDisplay';
+import JokeSubmissionForm from '../src/components/JokeSubmissionForm';
+import Auth from '../src/components/Auth';
+import UserProfile from '../src/components/UserProfile';
+import Leaderboard from '../src/components/Leaderboard';
+import JokeSearch from '../src/components/JokeSearch';
+import HeroSection from '../src/components/HeroSection';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -40,13 +41,13 @@ const getTheme = (mode: 'light' | 'dark') => createTheme({
   palette: {
     mode,
     primary: {
-      main: '#4A90E2',
+      main: '#4A90E2', // Cheerful blue
     },
     secondary: {
-      main: '#F5A623',
+      main: '#FFD166', // Warm yellow
     },
     background: {
-      default: mode === 'light' ? '#F5F5F5' : '#121212',
+      default: mode === 'light' ? '#F5F7FA' : '#121212',
       paper: mode === 'light' ? '#FFFFFF' : '#1E1E1E',
     },
     text: {
@@ -55,16 +56,18 @@ const getTheme = (mode: 'light' | 'dark') => createTheme({
     },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h1: { fontSize: '2.5rem', fontWeight: 500 },
-    h2: { fontSize: '2rem', fontWeight: 500 },
+    fontFamily: '"Poppins", "Roboto", "Helvetica", "Arial", sans-serif',
+    h1: { fontSize: '3rem', fontWeight: 700 },
+    h2: { fontSize: '2.5rem', fontWeight: 600 },
     body1: { fontSize: '1rem' },
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: 25,
+          textTransform: 'none',
+          fontWeight: 600,
         },
       },
     },
@@ -81,6 +84,7 @@ const getTheme = (mode: 'light' | 'dark') => createTheme({
 
 const App: React.FC = () => {
   const [jokes, setJokes] = useState<Joke[]>([]);
+  const [displayedJokes, setDisplayedJokes] = useState<Joke[]>([]);
   const [currentJoke, setCurrentJoke] = useState<Joke | null>(null);
   const [jokeOfTheDay, setJokeOfTheDay] = useState<Joke | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -109,7 +113,13 @@ const App: React.FC = () => {
       const jokesSnapshot = await getDocs(jokesQuery);
       const jokesList = jokesSnapshot.docs.map(doc => ({ ...(doc.data() as Joke), id: doc.id }));
       setJokes(jokesList);
-      setCurrentJoke(jokesList[Math.floor(Math.random() * jokesList.length)]);
+      
+      // Randomly select 5 jokes to display
+      const shuffled = jokesList.sort(() => 0.5 - Math.random());
+      setDisplayedJokes(shuffled.slice(0, 5));
+
+      // Set a random joke as the current joke
+      setCurrentJoke(shuffled[0] || null);
     } catch (err) {
       setError('Failed to fetch jokes. Please try again later.');
       console.error('Error fetching jokes:', err);
@@ -153,9 +163,12 @@ const App: React.FC = () => {
   }, []);
 
   const getRandomJoke = () => {
-    const newJoke = jokes[Math.floor(Math.random() * jokes.length)];
-    setCurrentJoke(null);
-    setTimeout(() => setCurrentJoke(newJoke), 500);
+    if (jokes.length > 0) {
+      const randomIndex = Math.floor(Math.random() * jokes.length);
+      const newJoke = jokes[randomIndex];
+      setCurrentJoke(newJoke);
+      setDisplayedJokes([newJoke, ...displayedJokes.slice(0, 4)]);
+    }
   };
 
   const rateJoke = async (rating: number) => {
@@ -376,73 +389,79 @@ const App: React.FC = () => {
               <Auth onSignIn={handleEmailSignIn} onClose={handleClose} />
             </MenuItem>
           </Menu>
-
-          <Container maxWidth="md">
-            <Routes>
-              <Route path="/" element={
-                <Box sx={{ my: 4 }}>
-                  <FormControl fullWidth>
-                    <InputLabel id="category-select-label">Category</InputLabel>
-                    <Select
-                      labelId="category-select-label"
-                      id="category-select"
-                      value={selectedCategory}
-                      label="Category"
-                      onChange={handleCategoryChange}
-                    >
-                      <MenuItem value="all">All Categories</MenuItem>
-                      <MenuItem value="pun">Pun</MenuItem>
-                      <MenuItem value="wordplay">Wordplay</MenuItem>
-                      <MenuItem value="science">Science</MenuItem>
-                      <MenuItem value="animals">Animals</MenuItem>
-                      <MenuItem value="food">Food</MenuItem>
-                      <MenuItem value="school">School</MenuItem>
-                      <MenuItem value="halloween">Halloween</MenuItem>
-                      <MenuItem value="sports">Sports</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  {jokeOfTheDay && (
-                    <Box sx={{ my: 4 }}>
-                      <Typography variant="h5" component="h2" gutterBottom>
-                        Joke of the Day
-                      </Typography>
-                      <JokeDisplay 
-                        joke={jokeOfTheDay} 
-                        onRate={rateJoke} 
-                        onToggleFavorite={() => toggleFavorite(jokeOfTheDay.id)}
-                        isFavorite={favoriteJokes.includes(jokeOfTheDay.id)}
-                      />
+          <Container maxWidth="lg">
+            <Box sx={{ maxWidth: 800, margin: '0 auto' }}>
+              <Routes>
+                <Route path="/" element={
+                  <>
+                    <HeroSection onGetRandomJoke={getRandomJoke} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                      <Typography variant="h4">Today's Top Jokes</Typography>
+                      <FormControl sx={{ minWidth: 120 }}>
+                        <InputLabel id="category-select-label">Category</InputLabel>
+                        <Select
+                          labelId="category-select-label"
+                          id="category-select"
+                          value={selectedCategory}
+                          label="Category"
+                          onChange={handleCategoryChange}
+                        >
+                          <MenuItem value="all">All Categories</MenuItem>
+                          <MenuItem value="pun">Pun</MenuItem>
+                          <MenuItem value="wordplay">Wordplay</MenuItem>
+                          <MenuItem value="science">Science</MenuItem>
+                          <MenuItem value="animals">Animals</MenuItem>
+                          <MenuItem value="food">Food</MenuItem>
+                          <MenuItem value="school">School</MenuItem>
+                          <MenuItem value="halloween">Halloween</MenuItem>
+                          <MenuItem value="sports">Sports</MenuItem>
+                        </Select>
+                      </FormControl>
                     </Box>
-                  )}
-
-                  {showSubmissionForm && user ? (
-                    <JokeSubmissionForm onSubmit={submitJoke} />
-                  ) : (
-                    <AnimatePresence mode="wait">
-                      {currentJoke && (
+                    
+                    {jokeOfTheDay && (
+                      <Box sx={{ mb: 4 }}>
+                        <Typography variant="h5" gutterBottom>
+                          Joke of the Day
+                        </Typography>
                         <JokeDisplay 
-                          key={currentJoke.id} 
-                          joke={currentJoke} 
+                          joke={jokeOfTheDay} 
                           onRate={rateJoke} 
-                          onToggleFavorite={() => toggleFavorite(currentJoke.id)}
-                          isFavorite={favoriteJokes.includes(currentJoke.id)}
+                          onToggleFavorite={() => toggleFavorite(jokeOfTheDay.id)}
+                          isFavorite={favoriteJokes.includes(jokeOfTheDay.id)}
                         />
-                      )}
-                    </AnimatePresence>
-                  )}
-                  
-                  <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
-                    Get Another Joke
-                  </Button>
+                      </Box>
+                    )}
 
-                  <Leaderboard />
-                  <JokeSearch />
-                </Box>
-              } />
-              <Route path="/profile" element={<UserProfile />} />
-              <Route path="/categories" element={<Typography>Categories Page (To be implemented)</Typography>} />
-            </Routes>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+                      {displayedJokes.map(joke => (
+                        <Box key={joke.id} sx={{ width: '100%' }}>
+                          <JokeDisplay 
+                            joke={joke} 
+                            onRate={rateJoke} 
+                            onToggleFavorite={() => toggleFavorite(joke.id)}
+                            isFavorite={favoriteJokes.includes(joke.id)}
+                          />
+                        </Box>
+                      ))}
+                    </Box>
+                    
+                    {showSubmissionForm && user && (
+                      <JokeSubmissionForm onSubmit={submitJoke} />
+                    )}
+
+                    <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
+                      Get Another Joke
+                    </Button>
+
+                    <Leaderboard />
+                    <JokeSearch />
+                  </>
+                } />
+                <Route path="/profile" element={<UserProfile />} />
+                <Route path="/categories" element={<Typography>Categories Page (To be implemented)</Typography>} />
+              </Routes>
+            </Box>
           </Container>
         </div>
       </ThemeProvider>

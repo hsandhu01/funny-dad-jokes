@@ -46,7 +46,7 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
         exit={{ opacity: 0, y: -50 }}
         transition={{ duration: 0.5 }}
       >
-        <Card elevation={3} sx={{ mb: 3 }}>
+        <Card elevation={3} sx={{ mb: 3, width: '100%' }}>
           <CardContent>
             <Chip label={joke.category} color="primary" size="small" sx={{ mb: 2 }} />
             <Typography variant="h5" component="div" gutterBottom>
