@@ -91,6 +91,7 @@ const App: React.FC = () => {
   const [displayedJokes, setDisplayedJokes] = useState<Joke[]>([]);
   const [currentJoke, setCurrentJoke] = useState<Joke | null>(null);
   const [jokeOfTheDay, setJokeOfTheDay] = useState<Joke | null>(null);
+  const [randomJoke, setRandomJoke] = useState<Joke | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -164,14 +165,19 @@ const App: React.FC = () => {
     fetchJokeOfTheDay();
   }, []);
 
-  const getRandomJoke = () => {
+  const getRandomJoke = useCallback(() => {
     if (jokes.length > 0) {
       const randomIndex = Math.floor(Math.random() * jokes.length);
       const newJoke = jokes[randomIndex];
-      setCurrentJoke(newJoke);
-      setDisplayedJokes([newJoke, ...displayedJokes.slice(0, 4)]);
+      setRandomJoke(newJoke);
     }
-  };
+  }, [jokes]);
+
+  useEffect(() => {
+    if (jokes.length > 0 && !randomJoke) {
+      getRandomJoke();
+    }
+  }, [jokes, getRandomJoke, randomJoke]);
 
   const rateJoke = async (rating: number) => {
     if (currentJoke && user) {
@@ -417,6 +423,19 @@ const App: React.FC = () => {
                 <Route path="/" element={
                   <>
                     <HeroSection onGetRandomJoke={getRandomJoke} />
+                    
+                    {randomJoke && (
+                      <Box sx={{ my: 4, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                        <Typography variant="h5" gutterBottom>Random Joke</Typography>
+                        <JokeDisplay 
+                          joke={randomJoke}
+                          onRate={rateJoke}
+                          onToggleFavorite={() => toggleFavorite(randomJoke.id)}
+                          isFavorite={favoriteJokes.includes(randomJoke.id)}
+                        />
+                      </Box>
+                    )}
+
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                       <Typography variant="h4">Today's Top Jokes</Typography>
                       <FormControl sx={{ minWidth: 120 }}>
@@ -428,6 +447,7 @@ const App: React.FC = () => {
                           label="Category"
                           onChange={handleCategoryChange}
                         >
+                          
                           <MenuItem value="all">All Categories</MenuItem>
                           <MenuItem value="pun">Pun</MenuItem>
                           <MenuItem value="wordplay">Wordplay</MenuItem>
