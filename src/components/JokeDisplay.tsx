@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, CardContent, Typography, Box, Chip, Button, IconButton } from '@mui/material';
+import React, { useState } from 'react';
+import { Card, CardContent, Typography, Box, Chip, Button, IconButton, Snackbar } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FacebookShareButton, TwitterShareButton, WhatsappShareButton, EmailShareButton } from 'react-share';
 import FacebookIcon from '@mui/icons-material/Facebook';
@@ -34,8 +34,19 @@ const emojis = [
 ];
 
 const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorite, isFavorite }) => {
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const shareUrl = `${window.location.origin}/joke/${joke.id}`;
   const shareTitle = `Check out this dad joke: ${joke.setup}`;
+
+  const handleRate = (rating: number) => {
+    if (userRating === null) {
+      setUserRating(rating);
+      onRate(rating);
+      setShowFeedback(true);
+      setTimeout(() => setShowFeedback(false), 3000); // Hide feedback after 3 seconds
+    }
+  };
 
   return (
     <AnimatePresence mode="wait">
@@ -66,15 +77,17 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
                 {emojis.map((emojiData) => (
                   <Button
                     key={emojiData.rating}
-                    onClick={() => onRate(emojiData.rating)}
+                    onClick={() => handleRate(emojiData.rating)}
                     variant="outlined"
                     sx={{ 
                       minWidth: 'auto', 
                       fontSize: '1.5rem',
                       p: 1,
                       borderRadius: '50%',
-                      borderColor: joke.rating === emojiData.rating ? 'primary.main' : 'divider'
+                      borderColor: userRating === emojiData.rating ? 'primary.main' : 'divider',
+                      opacity: userRating !== null && userRating !== emojiData.rating ? 0.5 : 1,
                     }}
+                    disabled={userRating !== null}
                     title={emojiData.label}
                   >
                     {emojiData.emoji}
@@ -113,6 +126,12 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
             <CommentSection jokeId={joke.id} />
           </CardContent>
         </Card>
+        <Snackbar
+          open={showFeedback}
+          autoHideDuration={3000}
+          onClose={() => setShowFeedback(false)}
+          message="Thank you for rating this joke!"
+        />
       </motion.div>
     </AnimatePresence>
   );
