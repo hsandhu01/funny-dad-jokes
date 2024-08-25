@@ -28,6 +28,7 @@ import logo from '../src/assets/dad-jokes-logo.png';
 import { SelectChangeEvent } from '@mui/material/Select';
 import CategoriesPage from '../src/components/CategoriesPage';
 import CategoryJokesPage from '../src/components/CategoryJokesPage';
+import JokeSubmissionModal from '../src/components/JokeSubmissionModal';
 
 interface Joke {
   id: string;
@@ -93,11 +94,11 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [favoriteJokes, setFavoriteJokes] = useState<string[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showJokeSubmissionModal, setShowJokeSubmissionModal] = useState(false);
 
   const theme = getTheme(darkMode ? 'dark' : 'light');
 
@@ -228,8 +229,12 @@ const App: React.FC = () => {
     }
   };
 
-  const submitJoke = async (joke: Omit<Joke, 'id' | 'rating' | 'ratingCount' | 'userId'>) => {
+  const submitJoke = async (joke: { setup: string; punchline: string; category: string }) => {
     if (user) {
+      if (!joke.setup.trim() || !joke.punchline.trim() || !joke.category) {
+        alert('Please fill in all fields before submitting a joke.');
+        return;
+      }
       try {
         await addDoc(collection(db, 'jokes'), {
           ...joke,
@@ -237,7 +242,7 @@ const App: React.FC = () => {
           rating: 0,
           ratingCount: 0,
         });
-        setShowSubmissionForm(false);
+        setShowJokeSubmissionModal(false);
         fetchJokes();
         await checkAchievements(user.uid);
         const result = await updateUserLevel(user.uid, 'submitJoke');
@@ -265,10 +270,18 @@ const App: React.FC = () => {
   };
 
   const toggleDrawer = (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
-    if (event.type === 'keydown' && ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')) {
+    if (
+      event.type === 'keydown' &&
+      ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')
+    ) {
       return;
     }
     setDrawerOpen(open);
+  };
+
+  const handleSubmitJokeClick = () => {
+    setShowJokeSubmissionModal(true);
+    setDrawerOpen(false);
   };
 
   const drawerContent = (
@@ -288,7 +301,7 @@ const App: React.FC = () => {
           <ListItemText primary="Categories" />
         </ListItem>
         {user && (
-          <ListItem button onClick={() => setShowSubmissionForm(!showSubmissionForm)}>
+          <ListItem button onClick={handleSubmitJokeClick}>
             <ListItemIcon><AddIcon /></ListItemIcon>
             <ListItemText primary="Submit a Joke" />
           </ListItem>
@@ -296,9 +309,6 @@ const App: React.FC = () => {
       </List>
     </Box>
   );
-
-  if (loading) return <div>Loading jokes...</div>;
-  if (error) return <div>{error}</div>;
 
   return (
     <Router>
@@ -447,10 +457,6 @@ const App: React.FC = () => {
                         </Box>
                       ))}
                     </Box>
-                    
-                    {showSubmissionForm && user && (
-                      <JokeSubmissionForm onSubmit={submitJoke} />
-                    )}
 
                     <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
                       Get Another Joke
@@ -466,6 +472,11 @@ const App: React.FC = () => {
               </Routes>
             </Box>
           </Container>
+          <JokeSubmissionModal
+            open={showJokeSubmissionModal}
+            onClose={() => setShowJokeSubmissionModal(false)}
+            onSubmit={submitJoke}
+          />
         </div>
       </ThemeProvider>
     </Router>
