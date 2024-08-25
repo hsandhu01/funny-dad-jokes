@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { collection, getDocs, query, where, CollectionReference, Query, addDoc, updateDoc, doc, deleteDoc, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where, CollectionReference, Query, addDoc, updateDoc, doc, deleteDoc, limit, increment } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth } from './firebase';
 import JokeDisplay from '../src/components/JokeDisplay';
@@ -24,6 +24,7 @@ import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
 import { updateUserLevel } from './utils/userLevelUtils';
+import { checkAndUpdateAchievements } from './utils/achievements';
 import logo from '../src/assets/dad-jokes-logo.png';
 import { SelectChangeEvent } from '@mui/material/Select';
 import CategoriesPage from '../src/components/CategoriesPage';
@@ -44,10 +45,10 @@ const getTheme = (mode: 'light' | 'dark') => createTheme({
   palette: {
     mode,
     primary: {
-      main: '#4A90E2', // Cheerful blue
+      main: '#4A90E2',
     },
     secondary: {
-      main: '#FFD166', // Warm yellow
+      main: '#FFD166',
     },
     background: {
       default: mode === 'light' ? '#F5F7FA' : '#121212',
@@ -117,11 +118,9 @@ const App: React.FC = () => {
       const jokesList = jokesSnapshot.docs.map(doc => ({ ...(doc.data() as Joke), id: doc.id }));
       setJokes(jokesList);
       
-      // Randomly select 5 jokes to display
       const shuffled = jokesList.sort(() => 0.5 - Math.random());
       setDisplayedJokes(shuffled.slice(0, 5));
 
-      // Set a random joke as the current joke
       setCurrentJoke(shuffled[0] || null);
     } catch (err) {
       setError('Failed to fetch jokes. Please try again later.');
@@ -183,6 +182,10 @@ const App: React.FC = () => {
       try {
         await updateDoc(jokeRef, { rating: newRating, ratingCount: newRatingCount });
         setCurrentJoke({ ...currentJoke, rating: newRating, ratingCount: newRatingCount });
+        await updateDoc(doc(db, 'users', user.uid), {
+          totalRatings: increment(1)
+        });
+        await checkAndUpdateAchievements(user.uid, 'ratings');
         const result = await updateUserLevel(currentJoke.userId, 'receiveRating');
         console.log('User level updated after receiving rating:', result);
       } catch (error) {
@@ -202,6 +205,10 @@ const App: React.FC = () => {
       if (querySnapshot.empty) {
         await addDoc(favoritesRef, { userId: user.uid, jokeId });
         setFavoriteJokes([...favoriteJokes, jokeId]);
+        await updateDoc(doc(db, 'users', user.uid), {
+          totalFavorites: increment(1)
+        });
+        await checkAndUpdateAchievements(user.uid, 'favorites');
       } else {
         const docToDelete = querySnapshot.docs[0];
         await deleteDoc(doc(db, 'favorites', docToDelete.id));
@@ -244,7 +251,10 @@ const App: React.FC = () => {
         });
         setShowJokeSubmissionModal(false);
         fetchJokes();
-        await checkAchievements(user.uid);
+        await updateDoc(doc(db, 'users', user.uid), {
+          totalJokes: increment(1)
+        });
+        await checkAndUpdateAchievements(user.uid, 'jokes');
         const result = await updateUserLevel(user.uid, 'submitJoke');
         console.log('User level updated after submitting joke:', result);
       } catch (error) {

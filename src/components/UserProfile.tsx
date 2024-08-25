@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Box, Typography, Tabs, Tab, CircularProgress, List, ListItem, ListItemText } from '@mui/material';
+import { Box, Typography, Tabs, Tab, CircularProgress, List, ListItem, ListItemText, Grid, Paper } from '@mui/material';
 import JokeDisplay from './JokeDisplay';
-import Achievements, { Achievement } from './Achievements';
 import UserLevel from './UserLevel';
-import { UserData, initializeUserData } from '../utils/userUtils';
+import { UserData } from '../utils/userUtils';
 
 interface Joke {
   id: string;
@@ -24,6 +23,14 @@ interface Comment {
   createdAt: Date;
 }
 
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlockedAt: Date;
+}
+
 const UserProfile: React.FC = () => {
   const [submittedJokes, setSubmittedJokes] = useState<Joke[]>([]);
   const [favoriteJokes, setFavoriteJokes] = useState<Joke[]>([]);
@@ -34,42 +41,24 @@ const UserProfile: React.FC = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
-    const unsubscribe = fetchUserData();
-    fetchUserJokes();
-    fetchUserComments();
-    fetchAchievements();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, []);
-
-  const fetchUserData = () => {
-    if (auth.currentUser) {
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      return onSnapshot(userRef, (doc) => {
-        if (doc.exists()) {
-          const data = doc.data() as UserData;
-          console.log("User data updated:", data);
-          setUserData(data);
-        } else {
-          console.log("No user document found. Creating one.");
-          if (auth.currentUser) {
-            initializeUserData(auth.currentUser.uid).then(() => {
-              // The listener will pick up the new document automatically
-            });
-          } else {
-            console.error("User is not authenticated");
-          }
+    const fetchUserData = async () => {
+      if (auth.currentUser) {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          setUserData(userDoc.data() as UserData);
         }
-        setLoading(false);
-      }, (error) => {
-        console.error("Error fetching user data:", error);
-        setLoading(false);
-      });
-    }
-    return () => {};
-  };
+
+        await fetchUserJokes();
+        await fetchUserComments();
+        await fetchAchievements();
+      }
+      setLoading(false);
+    };
+
+    fetchUserData();
+  }, []);
 
   const fetchUserJokes = async () => {
     if (auth.currentUser) {
@@ -122,11 +111,19 @@ const UserProfile: React.FC = () => {
 
   const fetchAchievements = async () => {
     if (auth.currentUser) {
-      const achievementsRef = collection(db, 'achievements');
-      const q = query(achievementsRef, where('userId', '==', auth.currentUser.uid));
-      const snapshot = await getDocs(q);
-      const userAchievements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Achievement));
-      setAchievements(userAchievements);
+      const achievementsRef = collection(db, 'users', auth.currentUser.uid, 'achievements');
+      try {
+        const snapshot = await getDocs(achievementsRef);
+        console.log(`Fetched ${snapshot.docs.length} achievements`);
+        const userAchievements = snapshot.docs.map(doc => ({
+          ...doc.data(),
+          unlockedAt: doc.data().unlockedAt?.toDate()
+        } as Achievement));
+        setAchievements(userAchievements);
+        console.log('Fetched achievements:', userAchievements);
+      } catch (error) {
+        console.error("Error fetching achievements:", error);
+      }
     }
   };
 
@@ -158,6 +155,7 @@ const UserProfile: React.FC = () => {
         <Tab label="Submitted Jokes" />
         <Tab label="Favorite Jokes" />
         <Tab label="Your Comments" />
+        <Tab label="Achievements" />
       </Tabs>
       <Box sx={{ p: 3 }}>
         {activeTab === 0 && (
@@ -206,8 +204,27 @@ const UserProfile: React.FC = () => {
             <Typography>You haven't made any comments yet.</Typography>
           )
         )}
+        {activeTab === 3 && (
+          achievements.length > 0 ? (
+            <Grid container spacing={2}>
+              {achievements.map((achievement) => (
+                <Grid item xs={12} sm={6} md={4} key={achievement.id}>
+                  <Paper elevation={3} sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="h6">{achievement.name}</Typography>
+                    <Typography variant="body2">{achievement.description}</Typography>
+                    <Box component="span" sx={{ fontSize: 48, mt: 1 }}>{achievement.icon}</Box>
+                    <Typography variant="caption" display="block">
+                      Unlocked: {achievement.unlockedAt.toLocaleDateString()}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Typography>You haven't unlocked any achievements yet. Keep using the app to earn achievements!</Typography>
+          )
+        )}
       </Box>
-      <Achievements achievements={achievements} />
     </Box>
   );
 };
