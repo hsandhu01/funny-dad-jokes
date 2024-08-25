@@ -13,7 +13,7 @@ interface AchievementsProps {
   achievements: Achievement[];
 }
 
-const Achievements: React.FC<{ achievements: Achievement[] }> = ({ achievements }) => {
+const Achievements: React.FC<AchievementsProps> = ({ achievements }) => {
   return (
     <Box sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>Achievements</Typography>
@@ -31,7 +31,7 @@ const Achievements: React.FC<{ achievements: Achievement[] }> = ({ achievements 
             >
               <Typography variant="h6">{achievement.name}</Typography>
               <Typography variant="body2">{achievement.description}</Typography>
-              <Box component="img" src={achievement.icon} alt={achievement.name} sx={{ width: 64, height: 64, mt: 1 }} />
+              <Box component="span" sx={{ fontSize: 48, mt: 1 }}>{achievement.icon}</Box>
             </Paper>
           </Grid>
         ))}

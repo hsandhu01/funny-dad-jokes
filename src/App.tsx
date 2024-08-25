@@ -26,6 +26,8 @@ import { checkAchievements } from './utils/achievementChecker';
 import { updateUserLevel } from './utils/userLevelUtils';
 import logo from '../src/assets/dad-jokes-logo.png';
 import { SelectChangeEvent } from '@mui/material/Select';
+import CategoriesPage from '../src/components/CategoriesPage';
+import CategoryJokesPage from '../src/components/CategoryJokesPage';
 
 interface Joke {
   id: string;
@@ -459,7 +461,8 @@ const App: React.FC = () => {
                   </>
                 } />
                 <Route path="/profile" element={<UserProfile />} />
-                <Route path="/categories" element={<Typography>Categories Page (To be implemented)</Typography>} />
+                <Route path="/categories" element={<CategoriesPage />} />
+                <Route path="/category/:categoryName" element={<CategoryJokesPage />} />
               </Routes>
             </Box>
           </Container>
