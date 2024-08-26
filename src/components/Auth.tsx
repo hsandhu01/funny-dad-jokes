@@ -21,7 +21,7 @@ const Auth: React.FC<AuthProps> = ({ onSignIn, onClose }) => {
     try {
       if (tabValue === 1) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await initializeUserData(userCredential.user.uid);
+        await initializeUserData(userCredential.user.uid, userCredential.user.email || '');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
