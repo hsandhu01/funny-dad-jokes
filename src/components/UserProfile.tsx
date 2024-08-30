@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Box, Typography, Tabs, Tab, CircularProgress, Grid, Paper, Avatar, Button, Container, List, ListItem, ListItemText } from '@mui/material';
+import { Box, Typography, Tabs, Tab, CircularProgress, Grid, Paper, Avatar, Button, Container, List, ListItem, ListItemText, Modal } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import JokeDisplay from './JokeDisplay';
 import UserLevel from './UserLevel';
@@ -41,7 +41,7 @@ const UserProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -132,15 +132,15 @@ const UserProfile: React.FC = () => {
     setActiveTab(newValue);
   };
 
-  const handleProfileUpdate = () => {
-    setIsEditing(false);
+  const handleProfileUpdate = (updatedUserData: Partial<UserData>) => {
+    setIsEditModalOpen(false);
     const currentUser = auth.currentUser;
     if (currentUser) {
       const fetchUpdatedUserData = async () => {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
-          setUserData(userDoc.data() as UserData);
+          setUserData({ ...userDoc.data() as UserData, ...updatedUserData });
         }
       };
       fetchUpdatedUserData();
@@ -187,7 +187,7 @@ const UserProfile: React.FC = () => {
             <Button
               variant="outlined"
               startIcon={<EditIcon />}
-              onClick={() => setIsEditing(true)}
+              onClick={() => setIsEditModalOpen(true)}
             >
               Edit Profile
             </Button>
@@ -308,9 +308,27 @@ const UserProfile: React.FC = () => {
         )}
       </Paper>
 
-      {isEditing && userData && (
-        <EditProfile userData={userData} onUpdate={handleProfileUpdate} />
-      )}
+      <Modal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        aria-labelledby="edit-profile-modal"
+      >
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: { xs: '90%', sm: 400 },
+          bgcolor: 'background.paper',
+          boxShadow: 24,
+          p: 4,
+          borderRadius: 2,
+        }}>
+          {userData && (
+            <EditProfile userData={userData} onUpdate={handleProfileUpdate} />
+          )}
+        </Box>
+      </Modal>
     </Container>
   );
 };
