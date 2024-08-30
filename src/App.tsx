@@ -10,6 +10,7 @@ import UserProfile from '../src/components/UserProfile';
 import Leaderboard from '../src/components/Leaderboard';
 import JokeSearch from '../src/components/JokeSearch';
 import HeroSection from '../src/components/HeroSection';
+import NotificationComponent from '../src/components/NotificationComponent';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -354,6 +355,7 @@ const App: React.FC = () => {
                 </Typography>
               </Link>
               <Box>
+                {user && <NotificationComponent />}
                 {user ? (
                   <>
                     <Button color="inherit" component={Link} to="/profile">Profile</Button>
@@ -447,7 +449,6 @@ const App: React.FC = () => {
                           label="Category"
                           onChange={handleCategoryChange}
                         >
-                          
                           <MenuItem value="all">All Categories</MenuItem>
                           <MenuItem value="pun">Pun</MenuItem>
                           <MenuItem value="wordplay">Wordplay</MenuItem>
