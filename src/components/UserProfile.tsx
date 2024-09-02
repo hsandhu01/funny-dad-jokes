@@ -185,12 +185,12 @@ const UserProfile: React.FC = () => {
               </Box>
             </Box>
           </Grid>
-          <Grid item xs={12} sm="auto" sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
+          <Grid item xs={12} sm="auto" sx={{ textAlign: 'center' }}>
             <Button
               variant="outlined"
               startIcon={<EditIcon />}
               onClick={() => setIsEditModalOpen(true)}
-              sx={{ mb: 1 }}
+              sx={{ mr: 1, mb: { xs: 1, sm: 0 } }}
             >
               Edit Profile
             </Button>
@@ -199,7 +199,6 @@ const UserProfile: React.FC = () => {
               to="/notification-settings"
               variant="outlined"
               startIcon={<NotificationsIcon />}
-              sx={{ ml: { xs: 0, sm: 1 } }}
             >
               Notification Settings
             </Button>
