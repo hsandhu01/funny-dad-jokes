@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Box, Typography, Tabs, Tab, CircularProgress, Grid, Paper, Avatar, Button, Container, List, ListItem, ListItemText, Modal } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import JokeDisplay from './JokeDisplay';
 import UserLevel from './UserLevel';
 import EditProfile from './EditProfile';
@@ -188,8 +190,18 @@ const UserProfile: React.FC = () => {
               variant="outlined"
               startIcon={<EditIcon />}
               onClick={() => setIsEditModalOpen(true)}
+              sx={{ mb: 1 }}
             >
               Edit Profile
+            </Button>
+            <Button
+              component={Link}
+              to="/notification-settings"
+              variant="outlined"
+              startIcon={<NotificationsIcon />}
+              sx={{ ml: { xs: 0, sm: 1 } }}
+            >
+              Notification Settings
             </Button>
           </Grid>
         </Grid>

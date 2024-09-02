@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { collection, getDocs, query, where, CollectionReference, Query, addDoc, updateDoc, doc, deleteDoc, limit, increment } from 'firebase/firestore';
+import { collection, getDocs, query, where, CollectionReference, Query, addDoc, updateDoc, doc, deleteDoc, limit, increment, getDoc } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth } from './firebase';
 import JokeDisplay from '../src/components/JokeDisplay';
@@ -26,11 +26,13 @@ import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
 import { updateUserLevel } from './utils/userLevelUtils';
 import { checkAndUpdateAchievements } from './utils/achievements';
+import { createNotification } from './utils/notificationUtils';
 import logo from '../src/assets/dad-jokes-logo.png';
 import { SelectChangeEvent } from '@mui/material/Select';
 import CategoriesPage from '../src/components/CategoriesPage';
 import CategoryJokesPage from '../src/components/CategoryJokesPage';
 import JokeSubmissionModal from '../src/components/JokeSubmissionModal';
+import NotificationSettings from '../src/components/NotificationSettings';
 
 interface Joke {
   id: string;
@@ -195,6 +197,16 @@ const App: React.FC = () => {
         await checkAndUpdateAchievements(user.uid, 'ratings');
         const result = await updateUserLevel(currentJoke.userId, 'receiveRating');
         console.log('User level updated after receiving rating:', result);
+
+        // Create notification for joke creator
+        if (currentJoke.userId !== user.uid) {
+          await createNotification(
+            currentJoke.userId,
+            `Your joke "${currentJoke.setup.substring(0, 20)}..." received a new rating!`,
+            'rating',
+            currentJoke.id
+          );
+        }
       } catch (error) {
         console.error('Error updating joke rating or user level:', error);
       }
@@ -216,6 +228,18 @@ const App: React.FC = () => {
           totalFavorites: increment(1)
         });
         await checkAndUpdateAchievements(user.uid, 'favorites');
+  
+        // Create notification for joke creator
+        const jokeRef = doc(db, 'jokes', jokeId);
+        const jokeDoc = await getDoc(jokeRef);
+        if (jokeDoc.exists() && jokeDoc.data().userId !== user.uid) {
+          await createNotification(
+            jokeDoc.data().userId,
+            `Your joke "${jokeDoc.data().setup.substring(0, 20)}..." was favorited!`,
+            'achievement', // Changed from 'favorite' to 'achievement'
+            jokeId
+          );
+        }
       } else {
         const docToDelete = querySnapshot.docs[0];
         await deleteDoc(doc(db, 'favorites', docToDelete.id));
@@ -250,7 +274,7 @@ const App: React.FC = () => {
         return;
       }
       try {
-        await addDoc(collection(db, 'jokes'), {
+        const docRef = await addDoc(collection(db, 'jokes'), {
           ...joke,
           userId: user.uid,
           rating: 0,
@@ -264,6 +288,14 @@ const App: React.FC = () => {
         await checkAndUpdateAchievements(user.uid, 'jokes');
         const result = await updateUserLevel(user.uid, 'submitJoke');
         console.log('User level updated after submitting joke:', result);
+
+        // Create notification for the user
+        await createNotification(
+          user.uid,
+          `Your joke "${joke.setup.substring(0, 20)}..." was successfully submitted!`,
+          'achievement',
+          docRef.id
+        );
       } catch (error) {
         console.error('Error submitting joke or updating user level:', error);
       }
@@ -500,6 +532,7 @@ const App: React.FC = () => {
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/category/:categoryName" element={<CategoryJokesPage />} />
+                <Route path="/notification-settings" element={<NotificationSettings />} />
               </Routes>
             </Box>
           </Container>

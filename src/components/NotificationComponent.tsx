@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Badge, IconButton, Popover, List, ListItem, ListItemText, Typography } from '@mui/material';
+import { Badge, IconButton, Popover, List, ListItem, ListItemText, Typography, Button } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { Notification, getUnreadNotifications, markNotificationAsRead } from '../utils/notificationUtils';
 import { auth } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationComponent: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -17,10 +19,9 @@ const NotificationComponent: React.FC = () => {
     };
 
     fetchNotifications();
-    // Set up a timer to fetch notifications periodically
-    const timer = setInterval(fetchNotifications, 60000); // Fetch every minute
+    const interval = setInterval(fetchNotifications, 60000); // Fetch every minute
 
-    return () => clearInterval(timer);
+    return () => clearInterval(interval);
   }, []);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -36,7 +37,30 @@ const NotificationComponent: React.FC = () => {
       await markNotificationAsRead(notification.id);
       setNotifications(notifications.filter(n => n.id !== notification.id));
     }
-    // Here you can add logic to navigate to the related item if needed
+
+    // Navigate based on notification type
+    switch (notification.type) {
+      case 'rating':
+      case 'favorite':
+      case 'comment':
+        if (notification.relatedItemId) {
+          navigate(`/joke/${notification.relatedItemId}`);
+        }
+        break;
+      case 'achievement':
+        navigate('/profile');
+        break;
+    }
+
+    handleClose();
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (auth.currentUser) {
+      await Promise.all(notifications.map(n => n.id && markNotificationAsRead(n.id)));
+      setNotifications([]);
+    }
+    handleClose();
   };
 
   const open = Boolean(anchorEl);
@@ -63,20 +87,27 @@ const NotificationComponent: React.FC = () => {
           horizontal: 'right',
         }}
       >
-        <List sx={{ width: 300 }}>
+        <List sx={{ width: 300, maxHeight: 400, overflow: 'auto' }}>
           {notifications.length > 0 ? (
-            notifications.map((notification) => (
-              <ListItem 
-                button 
-                key={notification.id} 
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <ListItemText 
-                  primary={notification.message} 
-                  secondary={notification.createdAt.toDate().toLocaleString()} 
-                />
+            <>
+              {notifications.map((notification) => (
+                <ListItem 
+                  button 
+                  key={notification.id} 
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <ListItemText 
+                    primary={notification.message} 
+                    secondary={notification.createdAt.toDate().toLocaleString()} 
+                  />
+                </ListItem>
+              ))}
+              <ListItem>
+                <Button fullWidth onClick={handleMarkAllAsRead}>
+                  Mark all as read
+                </Button>
               </ListItem>
-            ))
+            </>
           ) : (
             <ListItem>
               <Typography>No new notifications</Typography>
