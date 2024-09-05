@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, Typography, Box, Chip, Button, IconButton, Snackbar } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, Button, IconButton, Snackbar, Grow } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FacebookShareButton, TwitterShareButton, WhatsappShareButton, EmailShareButton } from 'react-share';
 import FacebookIcon from '@mui/icons-material/Facebook';
@@ -36,6 +36,7 @@ const emojis = [
 const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorite, isFavorite }) => {
   const [userRating, setUserRating] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showPunchline, setShowPunchline] = useState(false);
   const shareUrl = `${window.location.origin}/joke/${joke.id}`;
   const shareTitle = `Check out this dad joke: ${joke.setup}`;
 
@@ -44,7 +45,7 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
       setUserRating(rating);
       onRate(rating);
       setShowFeedback(true);
-      setTimeout(() => setShowFeedback(false), 3000); // Hide feedback after 3 seconds
+      setTimeout(() => setShowFeedback(false), 3000);
     }
   };
 
@@ -57,15 +58,48 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
         exit={{ opacity: 0, y: -50 }}
         transition={{ duration: 0.5 }}
       >
-        <Card elevation={3} sx={{ mb: 3, width: '100%' }}>
-          <CardContent>
-            <Chip label={joke.category} color="primary" size="small" sx={{ mb: 2 }} />
-            <Typography variant="h5" component="div" gutterBottom>
+        <Card 
+          elevation={3} 
+          sx={{ 
+            mb: 3, 
+            width: '100%', 
+            borderRadius: 4,
+            background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
+            boxShadow: '20px 20px 60px #d9d9d9, -20px -20px 60px #ffffff',
+            overflow: 'visible'
+          }}
+        >
+          <CardContent sx={{ position: 'relative', pb: 4 }}>
+            <Chip 
+              label={joke.category} 
+              color="primary" 
+              size="small" 
+              sx={{ 
+                position: 'absolute', 
+                top: -12, 
+                left: 16, 
+                fontWeight: 'bold',
+                boxShadow: 2
+              }} 
+            />
+            <Typography variant="h5" component="div" gutterBottom sx={{ mt: 2, fontWeight: 'bold' }}>
               {joke.setup}
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              {joke.punchline}
-            </Typography>
+            <Grow in={showPunchline} timeout={1000}>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
+                {joke.punchline}
+              </Typography>
+            </Grow>
+            {!showPunchline && (
+              <Button 
+                onClick={() => setShowPunchline(true)} 
+                variant="outlined" 
+                color="primary"
+                sx={{ mt: 2, mb: 2 }}
+              >
+                Reveal Punchline
+              </Button>
+            )}
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
               <VoiceReader text={`${joke.setup} ${joke.punchline}`} />
             </Box>
@@ -75,23 +109,28 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
               </Typography>
               <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                 {emojis.map((emojiData) => (
-                  <Button
+                  <motion.div
                     key={emojiData.rating}
-                    onClick={() => handleRate(emojiData.rating)}
-                    variant="outlined"
-                    sx={{ 
-                      minWidth: 'auto', 
-                      fontSize: '1.5rem',
-                      p: 1,
-                      borderRadius: '50%',
-                      borderColor: userRating === emojiData.rating ? 'primary.main' : 'divider',
-                      opacity: userRating !== null && userRating !== emojiData.rating ? 0.5 : 1,
-                    }}
-                    disabled={userRating !== null}
-                    title={emojiData.label}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                   >
-                    {emojiData.emoji}
-                  </Button>
+                    <Button
+                      onClick={() => handleRate(emojiData.rating)}
+                      variant="outlined"
+                      sx={{ 
+                        minWidth: 'auto', 
+                        fontSize: '1.5rem',
+                        p: 1,
+                        borderRadius: '50%',
+                        borderColor: userRating === emojiData.rating ? 'primary.main' : 'divider',
+                        opacity: userRating !== null && userRating !== emojiData.rating ? 0.5 : 1,
+                      }}
+                      disabled={userRating !== null}
+                      title={emojiData.label}
+                    >
+                      {emojiData.emoji}
+                    </Button>
+                  </motion.div>
                 ))}
               </Box>
             </Box>
@@ -119,9 +158,21 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
                   <EmailIcon />
                 </IconButton>
               </EmailShareButton>
-              <IconButton onClick={() => onToggleFavorite(joke.id)} color="primary" aria-label="toggle favorite">
-                {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-              </IconButton>
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <IconButton 
+                  onClick={() => onToggleFavorite(joke.id)} 
+                  color="primary" 
+                  aria-label="toggle favorite"
+                  sx={{ 
+                    bgcolor: isFavorite ? 'rgba(255, 0, 0, 0.1)' : 'transparent',
+                    '&:hover': {
+                      bgcolor: isFavorite ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.04)'
+                    }
+                  }}
+                >
+                  {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
+                </IconButton>
+              </motion.div>
             </Box>
             <CommentSection jokeId={joke.id} />
           </CardContent>
