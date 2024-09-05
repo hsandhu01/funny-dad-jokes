@@ -12,7 +12,7 @@ import JokeSearch from '../src/components/JokeSearch';
 import HeroSection from '../src/components/HeroSection';
 import NotificationComponent from '../src/components/NotificationComponent';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
+import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon, Avatar } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -340,19 +340,35 @@ const App: React.FC = () => {
       onClick={toggleDrawer(false)}
       onKeyDown={toggleDrawer(false)}
     >
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Avatar 
+          sx={{ width: 60, height: 60, bgcolor: 'primary.main', mb: 1 }}
+          src={user?.photoURL || undefined}
+        >
+          {user?.displayName?.[0] || user?.email?.[0] || 'U'}
+        </Avatar>
+        <Typography variant="subtitle1">{user?.displayName || 'User'}</Typography>
+        <Typography variant="body2" color="text.secondary">{user?.email}</Typography>
+      </Box>
+      <Divider />
       <List>
-        <ListItem button component={Link} to="/">
-          <ListItemIcon><HomeIcon /></ListItemIcon>
+        <ListItem button component={Link} to="/" sx={{ borderRadius: '0 20px 20px 0' }}>
           <ListItemText primary="Home" />
         </ListItem>
+        <ListItem button component={Link} to="/profile">
+          <ListItemText primary="Profile" />
+        </ListItem>
         <ListItem button component={Link} to="/categories">
-          <ListItemIcon><CategoryIcon /></ListItemIcon>
           <ListItemText primary="Categories" />
         </ListItem>
         {user && (
           <ListItem button onClick={handleSubmitJokeClick}>
-            <ListItemIcon><AddIcon /></ListItemIcon>
             <ListItemText primary="Submit a Joke" />
+          </ListItem>
+        )}
+        {user && (
+          <ListItem button onClick={signOut}>
+            <ListItemText primary="Logout" />
           </ListItem>
         )}
       </List>
@@ -388,23 +404,6 @@ const App: React.FC = () => {
               </Link>
               <Box>
                 {user && <NotificationComponent />}
-                {user ? (
-                  <>
-                    <Button color="inherit" component={Link} to="/profile">Profile</Button>
-                    <Button color="inherit" onClick={signOut}>Sign Out</Button>
-                  </>
-                ) : (
-                  <IconButton
-                    size="large"
-                    aria-label="account of current user"
-                    aria-controls="menu-appbar"
-                    aria-haspopup="true"
-                    onClick={handleMenu}
-                    color="inherit"
-                  >
-                    <AccountCircle />
-                  </IconButton>
-                )}
                 <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(!darkMode)} color="inherit">
                   {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                 </IconButton>
