@@ -11,8 +11,11 @@ import {
   Select,
   MenuItem,
   Snackbar,
-  Alert
+  Alert,
+  Box,
+  Typography,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface JokeSubmissionModalProps {
   open: boolean;
@@ -50,46 +53,74 @@ const JokeSubmissionModal: React.FC<JokeSubmissionModalProps> = ({ open, onClose
 
   return (
     <>
-      <Dialog open={open} onClose={onClose}>
-        <DialogTitle>Submit a New Joke</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Setup"
-            fullWidth
-            value={setup}
-            onChange={(e) => setSetup(e.target.value)}
-            error={errors.setup}
-            helperText={errors.setup ? "Setup is required" : ""}
-          />
-          <TextField
-            margin="dense"
-            label="Punchline"
-            fullWidth
-            value={punchline}
-            onChange={(e) => setPunchline(e.target.value)}
-            error={errors.punchline}
-            helperText={errors.punchline ? "Punchline is required" : ""}
-          />
-          <FormControl fullWidth margin="dense" error={errors.category}>
-            <InputLabel>Category</InputLabel>
-            <Select value={category} onChange={(e) => setCategory(e.target.value as string)}>
-              <MenuItem value="pun">Pun</MenuItem>
-              <MenuItem value="wordplay">Wordplay</MenuItem>
-              <MenuItem value="science">Science</MenuItem>
-              <MenuItem value="animals">Animals</MenuItem>
-              <MenuItem value="food">Food</MenuItem>
-              <MenuItem value="school">School</MenuItem>
-              <MenuItem value="halloween">Halloween</MenuItem>
-              <MenuItem value="sports">Sports</MenuItem>
-            </Select>
-            {errors.category && <span style={{ color: 'red', fontSize: '0.75rem' }}>Category is required</span>}
-          </FormControl>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        PaperProps={{
+          component: motion.div,
+          initial: { opacity: 0, y: 50 },
+          animate: { opacity: 1, y: 0 },
+          exit: { opacity: 0, y: 50 },
+        }}
+      >
+        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
+          <Typography variant="h5" component="div" fontWeight="bold">
+            Submit a New Joke
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              autoFocus
+              label="Setup"
+              fullWidth
+              value={setup}
+              onChange={(e) => setSetup(e.target.value)}
+              error={errors.setup}
+              helperText={errors.setup ? "Setup is required" : ""}
+              variant="outlined"
+            />
+            <TextField
+              label="Punchline"
+              fullWidth
+              value={punchline}
+              onChange={(e) => setPunchline(e.target.value)}
+              error={errors.punchline}
+              helperText={errors.punchline ? "Punchline is required" : ""}
+              variant="outlined"
+              multiline
+              rows={2}
+            />
+            <FormControl fullWidth error={errors.category}>
+              <InputLabel>Category</InputLabel>
+              <Select value={category} onChange={(e) => setCategory(e.target.value as string)} label="Category">
+                <MenuItem value="pun">Pun</MenuItem>
+                <MenuItem value="wordplay">Wordplay</MenuItem>
+                <MenuItem value="science">Science</MenuItem>
+                <MenuItem value="animals">Animals</MenuItem>
+                <MenuItem value="food">Food</MenuItem>
+                <MenuItem value="school">School</MenuItem>
+                <MenuItem value="halloween">Halloween</MenuItem>
+                <MenuItem value="sports">Sports</MenuItem>
+              </Select>
+              {errors.category && <Typography color="error" variant="caption">Category is required</Typography>}
+            </FormControl>
+          </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={onClose} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            color="primary"
+            sx={{
+              px: 4,
+              py: 1,
+              borderRadius: '20px',
+            }}
+          >
             Submit Joke
           </Button>
         </DialogActions>
