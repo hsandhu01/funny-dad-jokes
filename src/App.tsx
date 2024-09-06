@@ -11,8 +11,8 @@ import Leaderboard from '../src/components/Leaderboard';
 import JokeSearch from '../src/components/JokeSearch';
 import HeroSection from '../src/components/HeroSection';
 import NotificationComponent from '../src/components/NotificationComponent';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon, Avatar } from '@mui/material';
+import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
+import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon, Avatar, useMediaQuery } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -21,6 +21,9 @@ import GoogleIcon from '@mui/icons-material/Google';
 import HomeIcon from '@mui/icons-material/Home';
 import CategoryIcon from '@mui/icons-material/Category';
 import AddIcon from '@mui/icons-material/Add';
+import LeaderboardIcon from '@mui/icons-material/Leaderboard'; // New import
+import TrendingUpIcon from '@mui/icons-material/TrendingUp'; // New import
+import ExitToAppIcon from '@mui/icons-material/ExitToApp'; // New import
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
@@ -34,6 +37,7 @@ import CategoryJokesPage from '../src/components/CategoryJokesPage';
 import JokeSubmissionModal from '../src/components/JokeSubmissionModal';
 import NotificationSettings from '../src/components/NotificationSettings';
 import Footer from './components/Footer';
+import SwipeableJokeCard from './components/SwipeableJokeCard';
 
 interface Joke {
   id: string;
@@ -107,6 +111,7 @@ const App: React.FC = () => {
   const [showJokeSubmissionModal, setShowJokeSubmissionModal] = useState(false);
 
   const theme = getTheme(darkMode ? 'dark' : 'light');
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const fetchJokes = useCallback(async () => {
     setLoading(true);
@@ -237,7 +242,7 @@ const App: React.FC = () => {
           await createNotification(
             jokeDoc.data().userId,
             `Your joke "${jokeDoc.data().setup.substring(0, 20)}..." was favorited!`,
-            'achievement', // Changed from 'favorite' to 'achievement'
+            'achievement',
             jokeId
           );
         }
@@ -353,22 +358,31 @@ const App: React.FC = () => {
       </Box>
       <Divider />
       <List>
-        <ListItem button component={Link} to="/" sx={{ borderRadius: '0 20px 20px 0' }}>
+        <ListItem button component={Link} to="/">
+          <ListItemIcon><HomeIcon /></ListItemIcon>
           <ListItemText primary="Home" />
         </ListItem>
         <ListItem button component={Link} to="/profile">
+          <ListItemIcon><AccountCircle /></ListItemIcon>
           <ListItemText primary="Profile" />
         </ListItem>
         <ListItem button component={Link} to="/categories">
+          <ListItemIcon><CategoryIcon /></ListItemIcon>
           <ListItemText primary="Categories" />
+        </ListItem>
+        <ListItem button component={Link} to="/leaderboard">
+          <ListItemIcon><LeaderboardIcon /></ListItemIcon>
+          <ListItemText primary="Leaderboard" />
         </ListItem>
         {user && (
           <ListItem button onClick={handleSubmitJokeClick}>
+            <ListItemIcon><AddIcon /></ListItemIcon>
             <ListItemText primary="Submit a Joke" />
           </ListItem>
         )}
         {user && (
           <ListItem button onClick={signOut}>
+            <ListItemIcon><ExitToAppIcon /></ListItemIcon>
             <ListItemText primary="Logout" />
           </ListItem>
         )}
@@ -380,13 +394,7 @@ const App: React.FC = () => {
     <Router>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '100vh',
-          }}
-        >
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <AppBar position="static">
             <Toolbar sx={{ justifyContent: 'space-between' }}>
               <IconButton
@@ -465,80 +473,100 @@ const App: React.FC = () => {
                     <>
                       <HeroSection onGetRandomJoke={getRandomJoke} />
                       
-                      {randomJoke && (
-                        <Box sx={{ my: 4, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-                          <Typography variant="h5" gutterBottom>Random Joke</Typography>
-                          <JokeDisplay 
-                            joke={randomJoke}
-                            onRate={rateJoke}
-                            onToggleFavorite={() => toggleFavorite(randomJoke.id)}
-                            isFavorite={favoriteJokes.includes(randomJoke.id)}
-                          />
-                        </Box>
-                      )}
-
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                        <Typography variant="h4">Today's Top Jokes</Typography>
-                        <FormControl sx={{ minWidth: 120 }}>
-                          <InputLabel id="category-select-label">Category</InputLabel>
-                          <Select
-                            labelId="category-select-label"
-                            id="category-select"
-                            value={selectedCategory}
-                            label="Category"
-                            onChange={handleCategoryChange}
-                          >
-                            <MenuItem value="all">All Categories</MenuItem>
-                            <MenuItem value="pun">Pun</MenuItem>
-                            <MenuItem value="wordplay">Wordplay</MenuItem>
-                            <MenuItem value="science">Science</MenuItem>
-                            <MenuItem value="animals">Animals</MenuItem>
-                            <MenuItem value="food">Food</MenuItem>
-                            <MenuItem value="school">School</MenuItem>
-                            <MenuItem value="halloween">Halloween</MenuItem>
-                            <MenuItem value="sports">Sports</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Box>
-                      
-                      {jokeOfTheDay && (
-                        <Box sx={{ mb: 4 }}>
-                          <Typography variant="h5" gutterBottom>
-                            Joke of the Day
-                          </Typography>
-                          <JokeDisplay 
-                            joke={jokeOfTheDay} 
-                            onRate={rateJoke} 
-                            onToggleFavorite={() => toggleFavorite(jokeOfTheDay.id)}
-
-                            isFavorite={favoriteJokes.includes(jokeOfTheDay.id)}
-                          />
-                        </Box>
-                      )}
-
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
-                        {displayedJokes.map(joke => (
-                          <Box key={joke.id} sx={{ width: '100%' }}>
-                            <JokeDisplay 
-                              joke={joke} 
-                              onRate={rateJoke} 
-                              onToggleFavorite={() => toggleFavorite(joke.id)}
-                              isFavorite={favoriteJokes.includes(joke.id)}
+                      {isMobile ? (
+                        <>
+                          {displayedJokes.length > 0 ? (
+                            <SwipeableJokeCard
+                              jokes={displayedJokes}
+                              onLike={(jokeId) => rateJoke(5)}
+                              onDislike={(jokeId) => rateJoke(1)}
+                              onFavorite={toggleFavorite}
+                              onRate={(jokeId, rating) => rateJoke(rating)}
+                              onComment={(jokeId, comment) => {/* Implement comment functionality */}}
+                              isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
                             />
+                          ) : (
+                            <Typography>Loading jokes...</Typography>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {randomJoke && (
+                            <Box sx={{ my: 4, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                              <Typography variant="h5" gutterBottom>Random Joke</Typography>
+                              <JokeDisplay 
+                                joke={randomJoke}
+                                onRate={rateJoke}
+                                onToggleFavorite={() => toggleFavorite(randomJoke.id)}
+                                isFavorite={favoriteJokes.includes(randomJoke.id)}
+                              />
+                            </Box>
+                          )}
+
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                            <Typography variant="h4">Today's Top Jokes</Typography>
+                            <FormControl sx={{ minWidth: 120 }}>
+                              <InputLabel id="category-select-label">Category</InputLabel>
+                              <Select
+                                labelId="category-select-label"
+                                id="category-select"
+                                value={selectedCategory}
+                                label="Category"
+                                onChange={handleCategoryChange}
+                              >
+                                <MenuItem value="all">All Categories</MenuItem>
+                                <MenuItem value="pun">Pun</MenuItem>
+                                <MenuItem value="wordplay">Wordplay</MenuItem>
+                                <MenuItem value="science">Science</MenuItem>
+                                <MenuItem value="animals">Animals</MenuItem>
+                                <MenuItem value="food">Food</MenuItem>
+                                <MenuItem value="school">School</MenuItem>
+                                <MenuItem value="halloween">Halloween</MenuItem>
+                                <MenuItem value="sports">Sports</MenuItem>
+                              </Select>
+                            </FormControl>
                           </Box>
-                        ))}
-                      </Box>
+                          
+                          {jokeOfTheDay && (
+                            <Box sx={{ mb: 4 }}>
+                              <Typography variant="h5" gutterBottom>
+                                Joke of the Day
+                              </Typography>
+                              <JokeDisplay 
+                                joke={jokeOfTheDay} 
+                                onRate={rateJoke} 
+                                onToggleFavorite={() => toggleFavorite(jokeOfTheDay.id)}
+                                isFavorite={favoriteJokes.includes(jokeOfTheDay.id)}
+                              />
+                            </Box>
+                          )}
 
-                      <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
-                        Get Another Joke
-                      </Button>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+                            {displayedJokes.map(joke => (
+                              <Box key={joke.id} sx={{ width: '100%' }}>
+                                <JokeDisplay 
+                                  joke={joke} 
+                                  onRate={rateJoke} 
+                                  onToggleFavorite={() => toggleFavorite(joke.id)}
+                                  isFavorite={favoriteJokes.includes(joke.id)}
+                                />
+                              </Box>
+                            ))}
+                          </Box>
 
-                      <Leaderboard />
-                      <JokeSearch />
+                          <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
+                            Get Another Joke
+                          </Button>
+
+                          <Leaderboard />
+                          <JokeSearch />
+                        </>
+                      )}
                     </>
                   } />
                   <Route path="/profile" element={<UserProfile />} />
                   <Route path="/categories" element={<CategoriesPage />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/category/:categoryName" element={<CategoryJokesPage />} />
                   <Route path="/notification-settings" element={<NotificationSettings />} />
                 </Routes>
