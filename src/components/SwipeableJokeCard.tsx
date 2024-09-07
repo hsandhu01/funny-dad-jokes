@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
-import { Card, CardContent, Typography, Box, IconButton, Button, TextField, Select, MenuItem, Chip } from '@mui/material';
+import { Card, CardContent, Typography, Box, Button, TextField, Select, MenuItem, Chip, IconButton } from '@mui/material';
 import { motion, PanInfo } from 'framer-motion';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import ShareIcon from '@mui/icons-material/Share';
-import CommentIcon from '@mui/icons-material/Comment';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 
 interface Joke {
   id: string;
@@ -23,50 +18,50 @@ interface Joke {
 
 interface SwipeableJokeCardProps {
   jokes: Joke[];
-  onLike: (jokeId: string) => void;
-  onDislike: (jokeId: string) => void;
-  onFavorite: (jokeId: string) => void;
   onRate: (jokeId: string, rating: number) => void;
   onComment: (jokeId: string, comment: string) => void;
+  onFavorite: (jokeId: string) => void;
   isFavorite: (jokeId: string) => boolean;
 }
 
-const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ 
-  jokes, onLike, onDislike, onFavorite, onRate, onComment, isFavorite 
-}) => {
+const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ jokes, onRate, onComment, onFavorite, isFavorite }) => {
   const [currentJokeIndex, setCurrentJokeIndex] = useState(0);
   const [showPunchline, setShowPunchline] = useState(false);
   const [comment, setComment] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState("Microsoft David - English (United States)");
+  const [selectedVoice, setSelectedVoice] = useState('');
 
   const currentJoke = jokes[currentJokeIndex];
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x > 100) {
-      handleLike();
+      nextJoke();
     } else if (info.offset.x < -100) {
-      handleDislike();
+      previousJoke();
     }
-  };
-
-  const handleLike = () => {
-    onLike(currentJoke.id);
-    nextJoke();
-  };
-
-  const handleDislike = () => {
-    onDislike(currentJoke.id);
-    nextJoke();
-  };
-
-  const handleFavorite = () => {
-    onFavorite(currentJoke.id);
   };
 
   const nextJoke = () => {
     setCurrentJokeIndex((prevIndex) => (prevIndex + 1) % jokes.length);
     setShowPunchline(false);
     setComment('');
+  };
+
+  const previousJoke = () => {
+    setCurrentJokeIndex((prevIndex) => (prevIndex - 1 + jokes.length) % jokes.length);
+    setShowPunchline(false);
+    setComment('');
+  };
+
+  const handleRevealPunchline = () => {
+    setShowPunchline(true);
+  };
+
+  const handleReadAloud = () => {
+    const utterance = new SpeechSynthesisUtterance(`${currentJoke.setup} ${currentJoke.punchline}`);
+    if (selectedVoice) {
+      utterance.voice = speechSynthesis.getVoices().find(voice => voice.name === selectedVoice) || null;
+    }
+    speechSynthesis.speak(utterance);
   };
 
   const handleRate = (rating: number) => {
@@ -80,95 +75,91 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
     }
   };
 
-  const readAloud = () => {
-    const utterance = new SpeechSynthesisUtterance(`${currentJoke.setup} ${currentJoke.punchline}`);
-    if (selectedVoice) {
-      utterance.voice = speechSynthesis.getVoices().find(voice => voice.name === selectedVoice) || null;
-    }
-    speechSynthesis.speak(utterance);
-  };
-
   return (
     <motion.div
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <Card sx={{ maxWidth: '100%', mx: 'auto', my: 2, borderRadius: 4, boxShadow: 3 }}>
-        <CardContent sx={{ padding: 6, textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', marginBottom: 2 }}>
-            Random Joke
-          </Typography>
-          <Chip label={currentJoke.category} color="primary" size="small" />
-          <Typography variant="body2" color="text.secondary" sx={{ backgroundColor: 'blue', color: 'white', fontWeight: 'bold', padding: '0.5rem 1rem', borderRadius: '0.5rem', marginBottom: 4 }}>
-            {currentJoke.category}
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 6 }}>
+      <Card sx={{ maxWidth: '100%', mx: 'auto', my: 2, boxShadow: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Chip label={currentJoke.category} color="primary" size="small" />
+            <Typography variant="body2" color="text.secondary">
+              {currentJoke.rating.toFixed(1)} ⭐ ({currentJoke.ratingCount} votes)
+            </Typography>
+          </Box>
+          <Typography variant="h6" component="div" gutterBottom>
             {currentJoke.setup}
           </Typography>
           {showPunchline ? (
-            <Typography variant="body1" color="text.secondary" sx={{ marginTop: 2, fontStyle: 'italic' }}>
+            <Typography variant="body1" sx={{ mt: 2, fontStyle: 'italic' }}>
               {currentJoke.punchline}
             </Typography>
           ) : (
-            <Button 
-              onClick={() => setShowPunchline(true)} 
-              sx={{ marginBottom: 6, backgroundColor: 'blue', '&:hover': { backgroundColor: 'darkblue' }, color: 'white' }}
-              fullWidth
-            >
+            <Button onClick={handleRevealPunchline} variant="outlined" fullWidth sx={{ mt: 2 }}>
               Reveal Punchline
             </Button>
           )}
-
-          <Box sx={{ marginTop: 3, display: 'flex', justifyContent: 'space-between' }}>
-            <IconButton onClick={handleDislike} color="error">
-              <ThumbDownIcon />
-            </IconButton>
-            <IconButton onClick={handleFavorite} color={isFavorite(currentJoke.id) ? "secondary" : "default"}>
-              <FavoriteIcon />
-            </IconButton>
-            <IconButton onClick={handleLike} color="success">
-              <ThumbUpIcon />
-            </IconButton>
-            <IconButton onClick={readAloud} color="primary">
-              <VolumeUpIcon />
-            </IconButton>
-            <IconButton color="primary">
-              <ShareIcon />
-            </IconButton>
-          </Box>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginBottom: 6 }}>
-            <Select value={selectedVoice} onChange={(e) => setSelectedVoice(e.target.value)} fullWidth>
-              <MenuItem value="Microsoft David - English (United States)">Microsoft David - English (United States)</MenuItem>
-              {/* Add more voice options here */}
+          <Box sx={{ mt: 2 }}>
+            <Select
+              value={selectedVoice}
+              onChange={(e) => setSelectedVoice(e.target.value as string)}
+              displayEmpty
+              fullWidth
+              size="small"
+            >
+              <MenuItem value="" disabled>Select a voice</MenuItem>
+              {speechSynthesis.getVoices().map((voice) => (
+                <MenuItem key={voice.name} value={voice.name}>
+                  {voice.name}
+                </MenuItem>
+              ))}
             </Select>
-            <Button sx={{ backgroundColor: 'blue', '&:hover': { backgroundColor: 'darkblue' }, color: 'white', width: '100%' }}>
+            <Button variant="contained" onClick={handleReadAloud} fullWidth sx={{ mt: 1 }}>
               Read Aloud
             </Button>
           </Box>
-
-          <Box sx={{ marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+            Rate this joke:
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, my: 1 }}>
+            {['😐', '🙂', '😀', '😆', '🤣'].map((emoji, index) => (
+              <IconButton key={index} onClick={() => handleRate(index + 1)}>
+                {emoji}
+              </IconButton>
+            ))}
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
             <IconButton color="primary"><FacebookIcon /></IconButton>
             <IconButton color="primary"><TwitterIcon /></IconButton>
             <IconButton color="primary"><WhatsAppIcon /></IconButton>
             <IconButton color="primary"><EmailIcon /></IconButton>
+            <IconButton 
+              color={isFavorite(currentJoke.id) ? "secondary" : "default"}
+              onClick={() => onFavorite(currentJoke.id)}
+            >
+              <FavoriteIcon />
+            </IconButton>
           </Box>
-
-          <Box sx={{ width: '100%', maxWidth: '500px', marginTop: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 2 }}>Comments</Typography>
-            <TextField
-              placeholder="Add a comment..."
-              variant="outlined"
-              fullWidth
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <Button sx={{ backgroundColor: 'blue', '&:hover': { backgroundColor: 'darkblue' }, color: 'white', width: '100%' }} onClick={handleCommentSubmit}>
-              Post Comment
-            </Button>
-          </Box>
+          <Typography variant="h6" sx={{ mt: 2 }}>Comments</Typography>
+          <TextField
+            fullWidth
+            variant="outlined"
+            size="small"
+            placeholder="Add a comment..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+          <Button variant="contained" onClick={handleCommentSubmit} fullWidth sx={{ mt: 1 }}>
+            Post Comment
+          </Button>
+          <Typography variant="body2" align="center" sx={{ mt: 2, color: 'text.secondary' }}>
+            No comments yet. Be the first to comment!
+          </Typography>
         </CardContent>
       </Card>
     </motion.div>

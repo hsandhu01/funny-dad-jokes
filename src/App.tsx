@@ -456,16 +456,14 @@ const App: React.FC = () => {
                       <HeroSection onGetRandomJoke={getRandomJoke} />
                       
                       {isMobile ? (
-                        <>
-                          {displayedJokes.length > 0 ? (
-                            <SwipeableJokeCard
-                              jokes={displayedJokes}
-                              onLike={(jokeId) => rateJoke(5)}
-                              onDislike={(jokeId) => rateJoke(1)}
-                              onFavorite={toggleFavorite}
-                              onRate={(jokeId, rating) => rateJoke(rating)}
-                              onComment={(jokeId, comment) => {/* Implement comment functionality */}}
-                              isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
+  <>
+    {displayedJokes.length > 0 ? (
+      <SwipeableJokeCard
+        jokes={displayedJokes}
+        onRate={(jokeId, rating) => rateJoke(rating)}
+        onComment={(jokeId, comment) => {/* Implement comment functionality */}}
+        onFavorite={toggleFavorite}
+        isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
                             />
                           ) : (
                             <Typography>Loading jokes...</Typography>
