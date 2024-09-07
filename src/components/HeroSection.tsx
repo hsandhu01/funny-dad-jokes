@@ -1,20 +1,25 @@
 import React from 'react';
-import { Box, Typography, Button, Container } from '@mui/material';
+import { Box, Typography, Button, Container, useMediaQuery, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
+import SwipeIcon from '@mui/icons-material/Swipe';
 
 interface HeroSectionProps {
   onGetRandomJoke: () => void;
+  isMobile: boolean;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke }) => {
+const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke, isMobile }) => {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <Box
       sx={{
         background: 'linear-gradient(135deg, #4A90E2 0%, #81C784 100%)',
         color: 'white',
-        py: { xs: 8, md: 12 },
-        mb: 6,
-        borderRadius: '0 0 20% 20%',
+        py: { xs: 4, sm: 6, md: 8 },
+        mb: 4,
+        borderRadius: '0 0 10% 10%',
         boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
         overflow: 'hidden',
         position: 'relative',
@@ -22,17 +27,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke }) => {
     >
       <Container maxWidth="md">
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.6 }}
         >
           <Typography
-            variant="h1"
+            variant="h2"
             component="h1"
             gutterBottom
             sx={{
               fontWeight: 700,
-              fontSize: { xs: '2.5rem', md: '4rem' },
+              fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
               textAlign: 'center',
               textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
             }}
@@ -41,18 +46,19 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke }) => {
           </Typography>
         </motion.div>
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
           <Typography
-            variant="h5"
+            variant="h6"
             paragraph
             sx={{
               textAlign: 'center',
-              mb: 4,
+              mb: 3,
               fontStyle: 'italic',
               textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
             }}
           >
             "Because Groans are Just Laughs in Disguise!"
@@ -68,14 +74,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke }) => {
           <Button
             variant="contained"
             color="secondary"
-            size="large"
+            size={isSmallScreen ? "medium" : "large"}
             onClick={onGetRandomJoke}
             sx={{
               display: 'block',
               mx: 'auto',
-              px: 4,
-              py: 1.5,
-              fontSize: '1.2rem',
+              px: { xs: 3, sm: 4 },
+              py: { xs: 1, sm: 1.5 },
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
               fontWeight: 'bold',
               borderRadius: '50px',
               boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -87,6 +93,18 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke }) => {
             Get a Random Joke
           </Button>
         </motion.div>
+        {isMobile && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 2 }}>
+              <SwipeIcon sx={{ mr: 1 }} />
+              <Typography variant="body2">Swipe for more jokes</Typography>
+            </Box>
+          </motion.div>
+        )}
       </Container>
       <Box
         component={motion.div}
@@ -95,10 +113,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke }) => {
         transition={{ duration: 1, delay: 0.6 }}
         sx={{
           position: 'absolute',
-          bottom: -100,
-          left: -100,
-          width: 200,
-          height: 200,
+          bottom: -50,
+          left: -50,
+          width: 100,
+          height: 100,
           borderRadius: '50%',
           background: 'rgba(255,255,255,0.1)',
         }}
@@ -110,10 +128,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke }) => {
         transition={{ duration: 1, delay: 0.8 }}
         sx={{
           position: 'absolute',
-          top: -50,
-          right: -50,
-          width: 150,
-          height: 150,
+          top: -25,
+          right: -25,
+          width: 75,
+          height: 75,
           borderRadius: '50%',
           background: 'rgba(255,255,255,0.1)',
         }}

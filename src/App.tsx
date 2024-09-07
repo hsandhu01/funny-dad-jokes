@@ -206,7 +206,6 @@ const App: React.FC = () => {
           const result = await updateUserLevel(jokeData.userId, 'receiveRating');
           console.log('User level updated after receiving rating:', result);
 
-          // Update the jokes state
           setJokes(prevJokes => 
             prevJokes.map(joke => 
               joke.id === jokeId 
@@ -215,7 +214,6 @@ const App: React.FC = () => {
             )
           );
 
-          // Create notification for joke creator
           if (jokeData.userId !== user.uid) {
             await createNotification(
               jokeData.userId,
@@ -247,7 +245,6 @@ const App: React.FC = () => {
         });
         await checkAndUpdateAchievements(user.uid, 'favorites');
   
-        // Create notification for joke creator
         const jokeRef = doc(db, 'jokes', jokeId);
         const jokeDoc = await getDoc(jokeRef);
         if (jokeDoc.exists() && jokeDoc.data().userId !== user.uid) {
@@ -307,7 +304,6 @@ const App: React.FC = () => {
         const result = await updateUserLevel(user.uid, 'submitJoke');
         console.log('User level updated after submitting joke:', result);
 
-        // Create notification for the user
         await createNotification(
           user.uid,
           `Your joke "${joke.setup.substring(0, 20)}..." was successfully submitted!`,
@@ -361,7 +357,6 @@ const App: React.FC = () => {
           createdAt: new Date()
         });
         console.log('Comment added successfully');
-        // Optionally, update UI or fetch comments again
       } catch (error) {
         console.error('Error adding comment:', error);
       }
@@ -371,9 +366,7 @@ const App: React.FC = () => {
   };
 
   const handleShare = (platform: string, jokeId: string) => {
-    // Implement sharing logic here
     console.log(`Sharing joke ${jokeId} on ${platform}`);
-    // You can implement actual sharing logic based on the platform
   };
 
   const drawerContent = (
@@ -446,30 +439,34 @@ const App: React.FC = () => {
           }}
         >
           <AppBar position="static">
-            <Toolbar sx={{ justifyContent: 'space-between' }}>
-              <IconButton
-                size="large"
-                edge="start"
-                color="inherit"
-                aria-label="menu"
-                sx={{ mr: 2 }}
-                onClick={toggleDrawer(true)}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
-                <img 
-                  src={logo} 
-                  alt="Really Funny Dad Jokes" 
-                  style={{ height: '40px', marginRight: '10px' }}
-                />
-                <Typography variant="h6" component="div">
-                  Really Funny Dad Jokes
-                </Typography>
-              </Link>
-              <Box>
+            <Toolbar sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <IconButton
+                  size="large"
+                  edge="start"
+                  color="inherit"
+                  aria-label="menu"
+                  onClick={toggleDrawer(true)}
+                  sx={{ mr: 1 }}
+                >
+                  <MenuIcon />
+                </IconButton>
+                <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+                  <img 
+                    src={logo} 
+                    alt="Really Funny Dad Jokes" 
+                    style={{ height: '32px', marginRight: '8px' }}
+                  />
+                  {!isMobile && (
+                    <Typography variant="h6" component="div">
+                      Really Funny Dad Jokes
+                    </Typography>
+                  )}
+                </Link>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 {user && <NotificationComponent />}
-                <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(!darkMode)} color="inherit">
+                <IconButton onClick={() => setDarkMode(!darkMode)} color="inherit">
                   {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                 </IconButton>
               </Box>
@@ -490,7 +487,7 @@ const App: React.FC = () => {
                 <Routes>
                   <Route path="/" element={
                     <>
-                      <HeroSection onGetRandomJoke={getRandomJoke} />
+                      <HeroSection onGetRandomJoke={getRandomJoke} isMobile={isMobile} />
                       
                       {isMobile ? (
                         <>
