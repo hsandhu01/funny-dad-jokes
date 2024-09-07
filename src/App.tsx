@@ -11,6 +11,7 @@ import Leaderboard from '../src/components/Leaderboard';
 import JokeSearch from '../src/components/JokeSearch';
 import HeroSection from '../src/components/HeroSection';
 import NotificationComponent from '../src/components/NotificationComponent';
+import LoginPage from '../src/components/LoginPage';
 import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
 import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon, Avatar, useMediaQuery } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -21,9 +22,8 @@ import GoogleIcon from '@mui/icons-material/Google';
 import HomeIcon from '@mui/icons-material/Home';
 import CategoryIcon from '@mui/icons-material/Category';
 import AddIcon from '@mui/icons-material/Add';
-import LeaderboardIcon from '@mui/icons-material/Leaderboard'; // New import
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'; // New import
-import ExitToAppIcon from '@mui/icons-material/ExitToApp'; // New import
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
@@ -346,47 +346,54 @@ const App: React.FC = () => {
       onClick={toggleDrawer(false)}
       onKeyDown={toggleDrawer(false)}
     >
-      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Avatar 
-          sx={{ width: 60, height: 60, bgcolor: 'primary.main', mb: 1 }}
-          src={user?.photoURL || undefined}
-        >
-          {user?.displayName?.[0] || user?.email?.[0] || 'U'}
-        </Avatar>
-        <Typography variant="subtitle1">{user?.displayName || 'User'}</Typography>
-        <Typography variant="body2" color="text.secondary">{user?.email}</Typography>
-      </Box>
-      <Divider />
-      <List>
-        <ListItem button component={Link} to="/">
-          <ListItemIcon><HomeIcon /></ListItemIcon>
-          <ListItemText primary="Home" />
-        </ListItem>
-        <ListItem button component={Link} to="/profile">
-          <ListItemIcon><AccountCircle /></ListItemIcon>
-          <ListItemText primary="Profile" />
-        </ListItem>
-        <ListItem button component={Link} to="/categories">
-          <ListItemIcon><CategoryIcon /></ListItemIcon>
-          <ListItemText primary="Categories" />
-        </ListItem>
-        <ListItem button component={Link} to="/leaderboard">
-          <ListItemIcon><LeaderboardIcon /></ListItemIcon>
-          <ListItemText primary="Leaderboard" />
-        </ListItem>
-        {user && (
-          <ListItem button onClick={handleSubmitJokeClick}>
-            <ListItemIcon><AddIcon /></ListItemIcon>
-            <ListItemText primary="Submit a Joke" />
+      {user ? (
+        <>
+          <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Avatar 
+              sx={{ width: 60, height: 60, bgcolor: 'primary.main', mb: 1 }}
+              src={user.photoURL || undefined}
+            >
+              {user.displayName?.[0] || user.email?.[0] || 'U'}
+            </Avatar>
+            <Typography variant="subtitle1">{user.displayName || 'User'}</Typography>
+            <Typography variant="body2" color="text.secondary">{user.email}</Typography>
+          </Box>
+          <Divider />
+          <List>
+            <ListItem button component={Link} to="/">
+              <ListItemIcon><HomeIcon /></ListItemIcon>
+              <ListItemText primary="Home" />
+            </ListItem>
+            <ListItem button component={Link} to="/profile">
+              <ListItemIcon><AccountCircle /></ListItemIcon>
+              <ListItemText primary="Profile" />
+            </ListItem>
+            <ListItem button component={Link} to="/categories">
+              <ListItemIcon><CategoryIcon /></ListItemIcon>
+              <ListItemText primary="Categories" />
+            </ListItem>
+            <ListItem button onClick={handleSubmitJokeClick}>
+              <ListItemIcon><AddIcon /></ListItemIcon>
+              <ListItemText primary="Submit a Joke" />
+            </ListItem>
+            <ListItem button onClick={signOut}>
+              <ListItemIcon><ExitToAppIcon /></ListItemIcon>
+              <ListItemText primary="Logout" />
+            </ListItem>
+          </List>
+        </>
+      ) : (
+        <List>
+          <ListItem button onClick={signIn}>
+            <ListItemIcon><GoogleIcon /></ListItemIcon>
+            <ListItemText primary="Sign in with Google" />
           </ListItem>
-        )}
-        {user && (
-          <ListItem button onClick={signOut}>
-            <ListItemIcon><ExitToAppIcon /></ListItemIcon>
-            <ListItemText primary="Logout" />
+          <ListItem button component={Link} to="/login">
+            <ListItemIcon><LockOpenIcon /></ListItemIcon>
+            <ListItemText primary="Email Login/Signup" />
           </ListItem>
-        )}
-      </List>
+        </List>
+      )}
     </Box>
   );
 
@@ -394,7 +401,13 @@ const App: React.FC = () => {
     <Router>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100vh',
+          }}
+        >
           <AppBar position="static">
             <Toolbar sx={{ justifyContent: 'space-between' }}>
               <IconButton
@@ -434,37 +447,6 @@ const App: React.FC = () => {
             {drawerContent}
           </Drawer>
 
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-            PaperProps={{
-              style: {
-                width: '250px',
-                padding: '8px',
-              },
-            }}
-          >
-            <MenuItem onClick={() => { signIn(); handleClose(); }}>
-              <Button fullWidth variant="outlined" startIcon={<GoogleIcon />}>
-                Sign in with Google
-              </Button>
-            </MenuItem>
-            <Divider sx={{ my: 1 }} />
-            <MenuItem>
-              <Auth onSignIn={handleEmailSignIn} onClose={handleClose} />
-            </MenuItem>
-          </Menu>
           <Box component="main" sx={{ flexGrow: 1 }}>
             <Container maxWidth="lg">
               <Box sx={{ maxWidth: 800, margin: '0 auto' }}>
@@ -566,9 +548,9 @@ const App: React.FC = () => {
                   } />
                   <Route path="/profile" element={<UserProfile />} />
                   <Route path="/categories" element={<CategoriesPage />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/category/:categoryName" element={<CategoryJokesPage />} />
                   <Route path="/notification-settings" element={<NotificationSettings />} />
+                  <Route path="/login" element={<LoginPage signIn={signIn} />} />
                 </Routes>
               </Box>
             </Container>

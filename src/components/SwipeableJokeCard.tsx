@@ -37,7 +37,7 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
   const [currentJokeIndex, setCurrentJokeIndex] = useState(0);
   const [showPunchline, setShowPunchline] = useState(false);
   const [comment, setComment] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState('');
+  const [selectedVoice, setSelectedVoice] = useState("Microsoft David - English (United States)");
 
   const currentJoke = jokes[currentJokeIndex];
 
@@ -95,31 +95,32 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
       onDragEnd={handleDragEnd}
     >
       <Card sx={{ maxWidth: '100%', mx: 'auto', my: 2, borderRadius: 4, boxShadow: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Chip label={currentJoke.category} color="primary" size="small" />
-            <Typography variant="body2" color="text.secondary">
-              {currentJoke.rating.toFixed(1)} ⭐ ({currentJoke.ratingCount} votes)
-            </Typography>
-          </Box>
-          <Typography variant="h6" component="div" gutterBottom>
+        <CardContent sx={{ padding: 6, textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', marginBottom: 2 }}>
+            Random Joke
+          </Typography>
+          <Chip label={currentJoke.category} color="primary" size="small" />
+          <Typography variant="body2" color="text.secondary" sx={{ backgroundColor: 'blue', color: 'white', fontWeight: 'bold', padding: '0.5rem 1rem', borderRadius: '0.5rem', marginBottom: 4 }}>
+            {currentJoke.category}
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 6 }}>
             {currentJoke.setup}
           </Typography>
           {showPunchline ? (
-            <Typography variant="body1" color="text.secondary" sx={{ mt: 2, fontStyle: 'italic' }}>
+            <Typography variant="body1" color="text.secondary" sx={{ marginTop: 2, fontStyle: 'italic' }}>
               {currentJoke.punchline}
             </Typography>
           ) : (
             <Button 
               onClick={() => setShowPunchline(true)} 
-              variant="outlined" 
+              sx={{ marginBottom: 6, backgroundColor: 'blue', '&:hover': { backgroundColor: 'darkblue' }, color: 'white' }}
               fullWidth
-              sx={{ mt: 2 }}
             >
               Reveal Punchline
             </Button>
           )}
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
+
+          <Box sx={{ marginTop: 3, display: 'flex', justifyContent: 'space-between' }}>
             <IconButton onClick={handleDislike} color="error">
               <ThumbDownIcon />
             </IconButton>
@@ -136,28 +137,37 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
               <ShareIcon />
             </IconButton>
           </Box>
-          <Box sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              size="small"
-              placeholder="Add a comment..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              InputProps={{
-                endAdornment: (
-                  <IconButton onClick={handleCommentSubmit}>
-                    <CommentIcon />
-                  </IconButton>
-                ),
-              }}
-            />
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginBottom: 6 }}>
+            <Select value={selectedVoice} onChange={(e) => setSelectedVoice(e.target.value)} fullWidth>
+              <MenuItem value="Microsoft David - English (United States)">Microsoft David - English (United States)</MenuItem>
+              {/* Add more voice options here */}
+            </Select>
+            <Button sx={{ backgroundColor: 'blue', '&:hover': { backgroundColor: 'darkblue' }, color: 'white', width: '100%' }}>
+              Read Aloud
+            </Button>
           </Box>
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+
+          <Box sx={{ marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
             <IconButton color="primary"><FacebookIcon /></IconButton>
             <IconButton color="primary"><TwitterIcon /></IconButton>
             <IconButton color="primary"><WhatsAppIcon /></IconButton>
             <IconButton color="primary"><EmailIcon /></IconButton>
+          </Box>
+
+          <Box sx={{ width: '100%', maxWidth: '500px', marginTop: 4 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 2 }}>Comments</Typography>
+            <TextField
+              placeholder="Add a comment..."
+              variant="outlined"
+              fullWidth
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <Button sx={{ backgroundColor: 'blue', '&:hover': { backgroundColor: 'darkblue' }, color: 'white', width: '100%' }} onClick={handleCommentSubmit}>
+              Post Comment
+            </Button>
           </Box>
         </CardContent>
       </Card>
