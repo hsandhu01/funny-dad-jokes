@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Box, Button, TextField, Select, MenuItem, Chip, IconButton } from '@mui/material';
-import { motion, PanInfo } from 'framer-motion';
+import { motion, PanInfo, useAnimation } from 'framer-motion';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
@@ -22,34 +22,47 @@ interface SwipeableJokeCardProps {
   onComment: (jokeId: string, comment: string) => void;
   onFavorite: (jokeId: string) => void;
   isFavorite: (jokeId: string) => boolean;
+  onShare: (platform: string, jokeId: string) => void;
 }
 
-const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ jokes, onRate, onComment, onFavorite, isFavorite }) => {
+const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ 
+  jokes, onRate, onComment, onFavorite, isFavorite, onShare 
+}) => {
   const [currentJokeIndex, setCurrentJokeIndex] = useState(0);
   const [showPunchline, setShowPunchline] = useState(false);
   const [comment, setComment] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('');
+  const controls = useAnimation();
 
   const currentJoke = jokes[currentJokeIndex];
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (info.offset.x > 100) {
+  const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 100;
+    if (info.offset.x > threshold) {
+      await controls.start({ x: "100%", opacity: 0 });
       nextJoke();
-    } else if (info.offset.x < -100) {
+    } else if (info.offset.x < -threshold) {
+      await controls.start({ x: "-100%", opacity: 0 });
       previousJoke();
+    } else {
+      controls.start({ x: 0, opacity: 1 });
     }
   };
 
   const nextJoke = () => {
     setCurrentJokeIndex((prevIndex) => (prevIndex + 1) % jokes.length);
-    setShowPunchline(false);
-    setComment('');
+    resetCard();
   };
 
   const previousJoke = () => {
     setCurrentJokeIndex((prevIndex) => (prevIndex - 1 + jokes.length) % jokes.length);
+    resetCard();
+  };
+
+  const resetCard = () => {
     setShowPunchline(false);
     setComment('');
+    controls.start({ x: 0, opacity: 1 });
   };
 
   const handleRevealPunchline = () => {
@@ -75,13 +88,25 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ jokes, onRate, on
     }
   };
 
+  const handleFavorite = () => {
+    onFavorite(currentJoke.id);
+  };
+
+  const handleShare = (platform: string) => {
+    onShare(platform, currentJoke.id);
+  };
+
+  useEffect(() => {
+    resetCard();
+  }, [currentJokeIndex]);
+
   return (
     <motion.div
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
-      whileTap={{ scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      animate={controls}
+      initial={{ opacity: 1, x: 0 }}
     >
       <Card sx={{ maxWidth: '100%', mx: 'auto', my: 2, boxShadow: 3 }}>
         <CardContent>
@@ -133,13 +158,13 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ jokes, onRate, on
             ))}
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
-            <IconButton color="primary"><FacebookIcon /></IconButton>
-            <IconButton color="primary"><TwitterIcon /></IconButton>
-            <IconButton color="primary"><WhatsAppIcon /></IconButton>
-            <IconButton color="primary"><EmailIcon /></IconButton>
+            <IconButton onClick={() => handleShare('facebook')}><FacebookIcon /></IconButton>
+            <IconButton onClick={() => handleShare('twitter')}><TwitterIcon /></IconButton>
+            <IconButton onClick={() => handleShare('whatsapp')}><WhatsAppIcon /></IconButton>
+            <IconButton onClick={() => handleShare('email')}><EmailIcon /></IconButton>
             <IconButton 
               color={isFavorite(currentJoke.id) ? "secondary" : "default"}
-              onClick={() => onFavorite(currentJoke.id)}
+              onClick={handleFavorite}
             >
               <FavoriteIcon />
             </IconButton>

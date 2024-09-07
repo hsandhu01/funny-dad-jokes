@@ -188,35 +188,47 @@ const App: React.FC = () => {
     }
   }, [jokes, getRandomJoke, randomJoke]);
 
-  const rateJoke = async (rating: number) => {
-    if (currentJoke && user) {
-      const jokeRef = doc(db, 'jokes', currentJoke.id);
-      const newRating = (currentJoke.rating * currentJoke.ratingCount + rating) / (currentJoke.ratingCount + 1);
-      const newRatingCount = currentJoke.ratingCount + 1;
-      
-      try {
-        await updateDoc(jokeRef, { rating: newRating, ratingCount: newRatingCount });
-        setCurrentJoke({ ...currentJoke, rating: newRating, ratingCount: newRatingCount });
-        await updateDoc(doc(db, 'users', user.uid), {
-          totalRatings: increment(1)
-        });
-        await checkAndUpdateAchievements(user.uid, 'ratings');
-        const result = await updateUserLevel(currentJoke.userId, 'receiveRating');
-        console.log('User level updated after receiving rating:', result);
+  const rateJoke = async (jokeId: string, rating: number) => {
+    if (user) {
+      const jokeRef = doc(db, 'jokes', jokeId);
+      const jokeSnap = await getDoc(jokeRef);
+      if (jokeSnap.exists()) {
+        const jokeData = jokeSnap.data() as Joke;
+        const newRating = (jokeData.rating * jokeData.ratingCount + rating) / (jokeData.ratingCount + 1);
+        const newRatingCount = jokeData.ratingCount + 1;
+        
+        try {
+          await updateDoc(jokeRef, { rating: newRating, ratingCount: newRatingCount });
+          await updateDoc(doc(db, 'users', user.uid), {
+            totalRatings: increment(1)
+          });
+          await checkAndUpdateAchievements(user.uid, 'ratings');
+          const result = await updateUserLevel(jokeData.userId, 'receiveRating');
+          console.log('User level updated after receiving rating:', result);
 
-        // Create notification for joke creator
-        if (currentJoke.userId !== user.uid) {
-          await createNotification(
-            currentJoke.userId,
-            `Your joke "${currentJoke.setup.substring(0, 20)}..." received a new rating!`,
-            'rating',
-            currentJoke.id
+          // Update the jokes state
+          setJokes(prevJokes => 
+            prevJokes.map(joke => 
+              joke.id === jokeId 
+                ? { ...joke, rating: newRating, ratingCount: newRatingCount } 
+                : joke
+            )
           );
+
+          // Create notification for joke creator
+          if (jokeData.userId !== user.uid) {
+            await createNotification(
+              jokeData.userId,
+              `Your joke "${jokeData.setup.substring(0, 20)}..." received a new rating!`,
+              'rating',
+              jokeId
+            );
+          }
+        } catch (error) {
+          console.error('Error updating joke rating or user level:', error);
         }
-      } catch (error) {
-        console.error('Error updating joke rating or user level:', error);
       }
-    } else if (!user) {
+    } else {
       alert('Please sign in to rate jokes');
     }
   };
@@ -339,6 +351,31 @@ const App: React.FC = () => {
     setDrawerOpen(false);
   };
 
+  const handleComment = async (jokeId: string, comment: string) => {
+    if (user) {
+      try {
+        await addDoc(collection(db, 'comments'), {
+          jokeId,
+          userId: user.uid,
+          text: comment,
+          createdAt: new Date()
+        });
+        console.log('Comment added successfully');
+        // Optionally, update UI or fetch comments again
+      } catch (error) {
+        console.error('Error adding comment:', error);
+      }
+    } else {
+      alert('Please sign in to comment');
+    }
+  };
+
+  const handleShare = (platform: string, jokeId: string) => {
+    // Implement sharing logic here
+    console.log(`Sharing joke ${jokeId} on ${platform}`);
+    // You can implement actual sharing logic based on the platform
+  };
+
   const drawerContent = (
     <Box
       sx={{ width: 250 }}
@@ -456,14 +493,15 @@ const App: React.FC = () => {
                       <HeroSection onGetRandomJoke={getRandomJoke} />
                       
                       {isMobile ? (
-  <>
-    {displayedJokes.length > 0 ? (
-      <SwipeableJokeCard
-        jokes={displayedJokes}
-        onRate={(jokeId, rating) => rateJoke(rating)}
-        onComment={(jokeId, comment) => {/* Implement comment functionality */}}
-        onFavorite={toggleFavorite}
-        isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
+                        <>
+                          {displayedJokes.length > 0 ? (
+                            <SwipeableJokeCard
+                              jokes={displayedJokes}
+                              onRate={rateJoke}
+                              onComment={handleComment}
+                              onFavorite={toggleFavorite}
+                              isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
+                              onShare={handleShare}
                             />
                           ) : (
                             <Typography>Loading jokes...</Typography>
@@ -476,7 +514,7 @@ const App: React.FC = () => {
                               <Typography variant="h5" gutterBottom>Random Joke</Typography>
                               <JokeDisplay 
                                 joke={randomJoke}
-                                onRate={rateJoke}
+                                onRate={(rating) => rateJoke(randomJoke.id, rating)}
                                 onToggleFavorite={() => toggleFavorite(randomJoke.id)}
                                 isFavorite={favoriteJokes.includes(randomJoke.id)}
                               />
@@ -514,7 +552,7 @@ const App: React.FC = () => {
                               </Typography>
                               <JokeDisplay 
                                 joke={jokeOfTheDay} 
-                                onRate={rateJoke} 
+                                onRate={(rating) => rateJoke(jokeOfTheDay.id, rating)}
                                 onToggleFavorite={() => toggleFavorite(jokeOfTheDay.id)}
                                 isFavorite={favoriteJokes.includes(jokeOfTheDay.id)}
                               />
@@ -526,7 +564,7 @@ const App: React.FC = () => {
                               <Box key={joke.id} sx={{ width: '100%' }}>
                                 <JokeDisplay 
                                   joke={joke} 
-                                  onRate={rateJoke} 
+                                  onRate={(rating) => rateJoke(joke.id, rating)}
                                   onToggleFavorite={() => toggleFavorite(joke.id)}
                                   isFavorite={favoriteJokes.includes(joke.id)}
                                 />
