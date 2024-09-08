@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, Box, Button, TextField, Select, MenuItem, Chip, IconButton } from '@mui/material';
+import { Card, CardContent, Typography, Box, Button, TextField, Select, MenuItem, Chip, IconButton, Snackbar } from '@mui/material';
 import { motion, PanInfo, useAnimation } from 'framer-motion';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
 interface Joke {
   id: string;
@@ -16,6 +17,13 @@ interface Joke {
   ratingCount: number;
 }
 
+interface Comment {
+  id: string;
+  text: string;
+  userId: string;
+  createdAt: Date;
+}
+
 interface SwipeableJokeCardProps {
   jokes: Joke[];
   onRate: (jokeId: string, rating: number) => void;
@@ -23,18 +31,32 @@ interface SwipeableJokeCardProps {
   onFavorite: (jokeId: string) => void;
   isFavorite: (jokeId: string) => boolean;
   onShare: (platform: string, jokeId: string) => void;
+  fetchComments: (jokeId: string) => Promise<Comment[]>;
 }
 
 const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ 
-  jokes, onRate, onComment, onFavorite, isFavorite, onShare 
+  jokes, onRate, onComment, onFavorite, isFavorite, onShare, fetchComments
 }) => {
   const [currentJokeIndex, setCurrentJokeIndex] = useState(0);
   const [showPunchline, setShowPunchline] = useState(false);
   const [comment, setComment] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [comments, setComments] = useState<Comment[]>([]);
   const controls = useAnimation();
 
   const currentJoke = jokes[currentJokeIndex];
+
+  useEffect(() => {
+    const loadComments = async () => {
+      if (currentJoke) {
+        const fetchedComments = await fetchComments(currentJoke.id);
+        setComments(fetchedComments);
+      }
+    };
+    loadComments();
+  }, [currentJoke, fetchComments]);
 
   const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
@@ -79,21 +101,37 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
 
   const handleRate = (rating: number) => {
     onRate(currentJoke.id, rating);
+    setSnackbarMessage(`You rated this joke ${rating} stars!`);
+    setSnackbarOpen(true);
+    // Update the current joke's rating
+    const updatedJoke = {...currentJoke, rating: (currentJoke.rating * currentJoke.ratingCount + rating) / (currentJoke.ratingCount + 1), ratingCount: currentJoke.ratingCount + 1};
+    jokes[currentJokeIndex] = updatedJoke;
+    // Force a re-render
+    setCurrentJokeIndex(prevIndex => prevIndex);
   };
 
-  const handleCommentSubmit = () => {
+  const handleCommentSubmit = async () => {
     if (comment.trim()) {
-      onComment(currentJoke.id, comment);
+      await onComment(currentJoke.id, comment);
       setComment('');
+      setSnackbarMessage('Your comment has been submitted!');
+      setSnackbarOpen(true);
+      // Refresh comments
+      const fetchedComments = await fetchComments(currentJoke.id);
+      setComments(fetchedComments);
     }
   };
 
   const handleFavorite = () => {
     onFavorite(currentJoke.id);
+    setSnackbarMessage(isFavorite(currentJoke.id) ? 'Joke removed from favorites' : 'Joke added to favorites');
+    setSnackbarOpen(true);
   };
 
   const handleShare = (platform: string) => {
     onShare(platform, currentJoke.id);
+    setSnackbarMessage(`Shared on ${platform}`);
+    setSnackbarOpen(true);
   };
 
   useEffect(() => {
@@ -162,11 +200,8 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
             <IconButton onClick={() => handleShare('twitter')}><TwitterIcon /></IconButton>
             <IconButton onClick={() => handleShare('whatsapp')}><WhatsAppIcon /></IconButton>
             <IconButton onClick={() => handleShare('email')}><EmailIcon /></IconButton>
-            <IconButton 
-              color={isFavorite(currentJoke.id) ? "secondary" : "default"}
-              onClick={handleFavorite}
-            >
-              <FavoriteIcon />
+            <IconButton onClick={handleFavorite}>
+              {isFavorite(currentJoke.id) ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
             </IconButton>
           </Box>
           <Typography variant="h6" sx={{ mt: 2 }}>Comments</Typography>
@@ -182,11 +217,25 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
           <Button variant="contained" onClick={handleCommentSubmit} fullWidth sx={{ mt: 1 }}>
             Post Comment
           </Button>
-          <Typography variant="body2" align="center" sx={{ mt: 2, color: 'text.secondary' }}>
-            No comments yet. Be the first to comment!
-          </Typography>
+          <Box sx={{ mt: 2 }}>
+            {comments.map((comment) => (
+              <Box key={comment.id} sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
+                <Typography variant="body2">{comment.text}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {new Date(comment.createdAt).toLocaleString()}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
         </CardContent>
       </Card>
+      <Snackbar
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+      />
     </motion.div>
   );
 };

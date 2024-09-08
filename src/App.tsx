@@ -24,6 +24,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import AddIcon from '@mui/icons-material/Add';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
@@ -47,6 +48,13 @@ interface Joke {
   rating: number;
   ratingCount: number;
   userId: string;
+}
+
+interface Comment {
+  id: string;
+  text: string;
+  userId: string;
+  createdAt: Date;
 }
 
 const getTheme = (mode: 'light' | 'dark') => createTheme({
@@ -366,7 +374,36 @@ const App: React.FC = () => {
   };
 
   const handleShare = (platform: string, jokeId: string) => {
-    console.log(`Sharing joke ${jokeId} on ${platform}`);
+    const joke = jokes.find(j => j.id === jokeId);
+    if (!joke) return;
+
+    const text = `Check out this joke: ${joke.setup} ${joke.punchline}`;
+    const url = `https://yourwebsite.com/joke/${jokeId}`;
+
+    switch (platform) {
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'whatsapp':
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=Funny Joke&body=${encodeURIComponent(text + '\n\n' + url)}`;
+        break;
+    }
+  };
+
+  const fetchComments = async (jokeId: string): Promise<Comment[]> => {
+    const commentsRef = collection(db, 'comments');
+    const q = query(commentsRef, where('jokeId', '==', jokeId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Comment));
   };
 
   const drawerContent = (
@@ -405,6 +442,10 @@ const App: React.FC = () => {
             <ListItem button onClick={handleSubmitJokeClick}>
               <ListItemIcon><AddIcon /></ListItemIcon>
               <ListItemText primary="Submit a Joke" />
+            </ListItem>
+            <ListItem button component={Link} to="/leaderboard">
+              <ListItemIcon><EmojiEventsIcon /></ListItemIcon>
+              <ListItemText primary="Leaderboard" />
             </ListItem>
             <ListItem button onClick={signOut}>
               <ListItemIcon><ExitToAppIcon /></ListItemIcon>
@@ -499,6 +540,7 @@ const App: React.FC = () => {
                               onFavorite={toggleFavorite}
                               isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
                               onShare={handleShare}
+                              fetchComments={fetchComments}
                             />
                           ) : (
                             <Typography>Loading jokes...</Typography>
@@ -584,6 +626,7 @@ const App: React.FC = () => {
                   <Route path="/category/:categoryName" element={<CategoryJokesPage />} />
                   <Route path="/notification-settings" element={<NotificationSettings />} />
                   <Route path="/login" element={<LoginPage signIn={signIn} />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
                 </Routes>
               </Box>
             </Container>
