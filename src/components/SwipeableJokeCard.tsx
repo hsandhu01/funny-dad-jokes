@@ -32,10 +32,11 @@ interface SwipeableJokeCardProps {
   isFavorite: (jokeId: string) => boolean;
   onShare: (platform: string, jokeId: string) => void;
   fetchComments: (jokeId: string) => Promise<Comment[]>;
+  onSwipedAllJokes: () => void;
 }
 
 const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ 
-  jokes, onRate, onComment, onFavorite, isFavorite, onShare, fetchComments
+  jokes, onRate, onComment, onFavorite, isFavorite, onShare, fetchComments, onSwipedAllJokes
 }) => {
   const [currentJokeIndex, setCurrentJokeIndex] = useState(0);
   const [showPunchline, setShowPunchline] = useState(false);
@@ -56,6 +57,7 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
       }
     };
     loadComments();
+    setShowPunchline(false);
   }, [currentJoke, fetchComments]);
 
   const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -72,12 +74,21 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
   };
 
   const nextJoke = () => {
-    setCurrentJokeIndex((prevIndex) => (prevIndex + 1) % jokes.length);
+    if (currentJokeIndex < jokes.length - 1) {
+      setCurrentJokeIndex(prevIndex => prevIndex + 1);
+    } else {
+      onSwipedAllJokes();
+      setCurrentJokeIndex(0);
+    }
     resetCard();
   };
 
   const previousJoke = () => {
-    setCurrentJokeIndex((prevIndex) => (prevIndex - 1 + jokes.length) % jokes.length);
+    if (currentJokeIndex > 0) {
+      setCurrentJokeIndex(prevIndex => prevIndex - 1);
+    } else {
+      setCurrentJokeIndex(jokes.length - 1);
+    }
     resetCard();
   };
 
@@ -103,11 +114,6 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
     onRate(currentJoke.id, rating);
     setSnackbarMessage(`You rated this joke ${rating} stars!`);
     setSnackbarOpen(true);
-    // Update the current joke's rating
-    const updatedJoke = {...currentJoke, rating: (currentJoke.rating * currentJoke.ratingCount + rating) / (currentJoke.ratingCount + 1), ratingCount: currentJoke.ratingCount + 1};
-    jokes[currentJokeIndex] = updatedJoke;
-    // Force a re-render
-    setCurrentJokeIndex(prevIndex => prevIndex);
   };
 
   const handleCommentSubmit = async () => {
@@ -116,7 +122,6 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
       setComment('');
       setSnackbarMessage('Your comment has been submitted!');
       setSnackbarOpen(true);
-      // Refresh comments
       const fetchedComments = await fetchComments(currentJoke.id);
       setComments(fetchedComments);
     }
@@ -134,10 +139,6 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
     setSnackbarOpen(true);
   };
 
-  useEffect(() => {
-    resetCard();
-  }, [currentJokeIndex]);
-
   return (
     <motion.div
       drag="x"
@@ -145,6 +146,8 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
       onDragEnd={handleDragEnd}
       animate={controls}
       initial={{ opacity: 1, x: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      style={{ touchAction: "pan-y" }}
     >
       <Card sx={{ maxWidth: '100%', mx: 'auto', my: 2, boxShadow: 3 }}>
         <CardContent>

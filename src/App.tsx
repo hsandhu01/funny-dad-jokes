@@ -137,7 +137,7 @@ const App: React.FC = () => {
       setJokes(jokesList);
       
       const shuffled = jokesList.sort(() => 0.5 - Math.random());
-      setDisplayedJokes(shuffled.slice(0, 5));
+      setDisplayedJokes(shuffled.slice(0, 10));
 
       setCurrentJoke(shuffled[0] || null);
     } catch (err) {
@@ -182,19 +182,20 @@ const App: React.FC = () => {
     fetchJokeOfTheDay();
   }, []);
 
-  const getRandomJoke = useCallback(() => {
-    if (jokes.length > 0) {
-      const randomIndex = Math.floor(Math.random() * jokes.length);
-      const newJoke = jokes[randomIndex];
-      setRandomJoke(newJoke);
-    }
+  const getRandomJokes = useCallback((count: number): Joke[] => {
+    return [...jokes]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, count);
   }, [jokes]);
 
   useEffect(() => {
-    if (jokes.length > 0 && !randomJoke) {
-      getRandomJoke();
+    if (jokes.length > 0) {
+      setRandomJoke(getRandomJokes(1)[0]);
+      if (isMobile) {
+        setDisplayedJokes(getRandomJokes(10));
+      }
     }
-  }, [jokes, getRandomJoke, randomJoke]);
+  }, [jokes, isMobile, getRandomJokes]);
 
   const rateJoke = async (jokeId: string, rating: number) => {
     if (user) {
@@ -406,6 +407,10 @@ const App: React.FC = () => {
     } as Comment));
   };
 
+  const handleSwipedAllJokes = () => {
+    setDisplayedJokes(getRandomJokes(10));
+  };
+
   const drawerContent = (
     <Box
       sx={{ width: 250 }}
@@ -528,7 +533,7 @@ const App: React.FC = () => {
                 <Routes>
                   <Route path="/" element={
                     <>
-                      <HeroSection onGetRandomJoke={getRandomJoke} isMobile={isMobile} />
+                      <HeroSection onGetRandomJoke={getRandomJokes} isMobile={isMobile} />
                       
                       {isMobile ? (
                         <>
@@ -541,6 +546,7 @@ const App: React.FC = () => {
                               isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
                               onShare={handleShare}
                               fetchComments={fetchComments}
+                              onSwipedAllJokes={handleSwipedAllJokes}
                             />
                           ) : (
                             <Typography>Loading jokes...</Typography>
@@ -611,8 +617,8 @@ const App: React.FC = () => {
                             ))}
                           </Box>
 
-                          <Button variant="contained" onClick={getRandomJoke} sx={{ mt: 2 }}>
-                            Get Another Joke
+                          <Button variant="contained" onClick={() => setDisplayedJokes(getRandomJokes(10))} sx={{ mt: 2 }}>
+                            Get More Jokes
                           </Button>
 
                           <Leaderboard />
