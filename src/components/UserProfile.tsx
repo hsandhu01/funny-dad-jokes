@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { 
@@ -26,7 +26,30 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import JokeDisplay from './JokeDisplay';
 import UserLevel from './UserLevel';
 import EditProfile from './EditProfile';
-import { UserData } from '../utils/userUtils';
+import FollowButton from './FollowButton';
+import FollowersList from './FollowersList';
+import { UserData as UserDataFromUtils } from '../utils/userUtils';
+
+interface UserData {
+  id: string;
+  uid: string;
+  email: string;
+  username: string;
+  bio: string;
+  location: string;
+  favoriteCategory: string;
+  profilePictureURL: string;
+  level: number;
+  experience: number;
+  totalJokesSubmitted: number;
+  totalRatingsReceived: number;
+  totalRatingsGiven: number;
+  totalFavoritesReceived: number;
+  averageRating: number;
+  totalAchievements: number;
+  followersCount?: number;
+  followingCount?: number;
+}
 
 interface Joke {
   id: string;
@@ -54,6 +77,7 @@ interface Achievement {
 }
 
 const UserProfile: React.FC = () => {
+  const { userId } = useParams<{ userId: string }>();
   const [submittedJokes, setSubmittedJokes] = useState<Joke[]>([]);
   const [favoriteJokes, setFavoriteJokes] = useState<Joke[]>([]);
   const [userComments, setUserComments] = useState<Comment[]>([]);
@@ -62,89 +86,89 @@ const UserProfile: React.FC = () => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCurrentUser, setIsCurrentUser] = useState(false);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (auth.currentUser) {
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          setUserData(userDoc.data() as UserData);
-        }
+const fetchUserData = async () => {
+  if (auth.currentUser) {
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      setUserData({
+        ...data,
+        id: userDoc.id,
+        uid: auth.currentUser.uid, // Ensure uid is set
+      } as UserData);
+    }
 
-        await fetchUserJokes();
-        await fetchUserComments();
-        await fetchAchievements();
-      }
-      setLoading(false);
-    };
-
+    await fetchUserJokes(auth.currentUser.uid);
+    await fetchUserComments(auth.currentUser.uid);
+    await fetchAchievements(auth.currentUser.uid);
+  }
+  setLoading(false);
+};
+  
     fetchUserData();
   }, []);
 
-  const fetchUserJokes = async () => {
-    if (auth.currentUser) {
-      try {
-        const submittedQuery = query(
+  const fetchUserJokes = async (uid: string) => {
+    try {
+      const submittedQuery = query(
+        collection(db, 'jokes'),
+        where('userId', '==', uid)
+      );
+      const submittedSnapshot = await getDocs(submittedQuery);
+      const submittedJokesList = submittedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));
+      setSubmittedJokes(submittedJokesList);
+
+      const favoritesQuery = query(
+        collection(db, 'favorites'),
+        where('userId', '==', uid)
+      );
+      const favoritesSnapshot = await getDocs(favoritesQuery);
+      const favoriteJokeIds = favoritesSnapshot.docs.map(doc => doc.data().jokeId);
+
+      if (favoriteJokeIds.length > 0) {
+        const favoriteJokesQuery = query(
           collection(db, 'jokes'),
-          where('userId', '==', auth.currentUser.uid)
+          where('__name__', 'in', favoriteJokeIds)
         );
-        const submittedSnapshot = await getDocs(submittedQuery);
-        const submittedJokesList = submittedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));
-        setSubmittedJokes(submittedJokesList);
-
-        const favoritesQuery = query(
-          collection(db, 'favorites'),
-          where('userId', '==', auth.currentUser.uid)
-        );
-        const favoritesSnapshot = await getDocs(favoritesQuery);
-        const favoriteJokeIds = favoritesSnapshot.docs.map(doc => doc.data().jokeId);
-
-        if (favoriteJokeIds.length > 0) {
-          const favoriteJokesQuery = query(
-            collection(db, 'jokes'),
-            where('__name__', 'in', favoriteJokeIds)
-          );
-          const favoriteJokesSnapshot = await getDocs(favoriteJokesQuery);
-          const favoriteJokesList = favoriteJokesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));
-          setFavoriteJokes(favoriteJokesList);
-        } else {
-          setFavoriteJokes([]);
-        }
-      } catch (error) {
-        console.error("Error fetching user jokes:", error);
+        const favoriteJokesSnapshot = await getDocs(favoriteJokesQuery);
+        const favoriteJokesList = favoriteJokesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Joke));
+        setFavoriteJokes(favoriteJokesList);
+      } else {
+        setFavoriteJokes([]);
       }
+    } catch (error) {
+      console.error("Error fetching user jokes:", error);
     }
   };
 
-  const fetchUserComments = async () => {
-    if (auth.currentUser) {
-      const commentsRef = collection(db, 'comments');
-      const q = query(commentsRef, where('userId', '==', auth.currentUser.uid));
-      const snapshot = await getDocs(q);
-      const userCommentsList = snapshot.docs.map(doc => ({
-        id: doc.id,
+  const fetchUserComments = async (uid: string) => {
+    const commentsRef = collection(db, 'comments');
+    const q = query(commentsRef, where('userId', '==', uid));
+    const snapshot = await getDocs(q);
+    const userCommentsList = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date()
+    } as Comment));
+    setUserComments(userCommentsList);
+  };
+
+  const fetchAchievements = async (uid: string) => {
+    const achievementsRef = collection(db, 'users', uid, 'achievements');
+    try {
+      const snapshot = await getDocs(achievementsRef);
+      const userAchievements = snapshot.docs.map(doc => ({
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date()
-      } as Comment));
-      setUserComments(userCommentsList);
-    }
-  };
-
-  const fetchAchievements = async () => {
-    if (auth.currentUser) {
-      const achievementsRef = collection(db, 'users', auth.currentUser.uid, 'achievements');
-      try {
-        const snapshot = await getDocs(achievementsRef);
-        const userAchievements = snapshot.docs.map(doc => ({
-          ...doc.data(),
-          unlockedAt: doc.data().unlockedAt?.toDate()
-        } as Achievement));
-        setAchievements(userAchievements);
-      } catch (error) {
-        console.error("Error fetching achievements:", error);
-      }
+        unlockedAt: doc.data().unlockedAt?.toDate()
+      } as Achievement));
+      setAchievements(userAchievements);
+    } catch (error) {
+      console.error("Error fetching achievements:", error);
     }
   };
 
@@ -154,19 +178,7 @@ const UserProfile: React.FC = () => {
 
   const handleProfileUpdate = (updatedUserData: Partial<UserData>) => {
     setIsEditModalOpen(false);
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      const fetchUpdatedUserData = async () => {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-          setUserData({ ...userDoc.data() as UserData, ...updatedUserData });
-        }
-      };
-      fetchUpdatedUserData();
-    } else {
-      console.error("No authenticated user found when trying to update profile");
-    }
+    setUserData(prevData => prevData ? { ...prevData, ...updatedUserData } : null);
   };
 
   const StatItem: React.FC<{ label: string; value: number | string }> = ({ label, value }) => (
@@ -184,79 +196,91 @@ const UserProfile: React.FC = () => {
     );
   }
 
+  if (!userData) {
+    return <Typography>User not found.</Typography>;
+  }
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 2 }}>
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} sm="auto">
             <Avatar
-              src={userData?.profilePictureURL}
-              alt={userData?.username}
+              src={userData.profilePictureURL}
+              alt={userData.username}
               sx={{ width: 120, height: 120, mx: 'auto', border: '4px solid', borderColor: 'primary.main' }}
             />
           </Grid>
           <Grid item xs={12} sm>
             <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-              <Typography variant="h4">{userData?.username}</Typography>
-              <Typography variant="body1" color="text.secondary" gutterBottom>{userData?.email}</Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>{userData?.bio || "No bio yet"}</Typography>
+              <Typography variant="h4">{userData.username}</Typography>
+              <Typography variant="body1" color="text.secondary" gutterBottom>{userData.email}</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>{userData.bio || "No bio yet"}</Typography>
               <Box sx={{ mt: 1 }}>
-                <Chip icon={<EmojiEventsIcon />} label={`Level ${userData?.level}`} color="primary" sx={{ mr: 1 }} />
-                <Chip label={userData?.location || "Location not set"} variant="outlined" />
-              </Box>
+  <Chip icon={<EmojiEventsIcon />} label={`Level ${userData.level}`} color="primary" sx={{ mr: 1 }} />
+  <Chip label={userData.location || "Location not set"} variant="outlined" sx={{ mr: 1 }} />
+  {userData.followersCount !== undefined && (
+    <Chip label={`${userData.followersCount} followers`} variant="outlined" sx={{ mr: 1 }} />
+  )}
+  {userData.followingCount !== undefined && (
+    <Chip label={`${userData.followingCount} following`} variant="outlined" />
+  )}
+</Box>
             </Box>
           </Grid>
           <Grid item xs={12} sm="auto">
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Button
-                variant="outlined"
-                startIcon={<EditIcon />}
-                onClick={() => setIsEditModalOpen(true)}
-                fullWidth
-              >
-                Edit Profile
-              </Button>
-              <Button
-                component={Link}
-                to="/notification-settings"
-                variant="outlined"
-                startIcon={<NotificationsIcon />}
-                fullWidth
-              >
-                Notification Settings
-              </Button>
+              {isCurrentUser ? (
+                <>
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => setIsEditModalOpen(true)}
+                    fullWidth
+                  >
+                    Edit Profile
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<NotificationsIcon />}
+                    fullWidth
+                  >
+                    Notification Settings
+                  </Button>
+                </>
+              ) : (
+                <FollowButton userId={userId || ''} />
+              )}
             </Box>
           </Grid>
         </Grid>
       </Paper>
 
-      {userData && (
-        <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 2 }}>
-          <UserLevel
-            level={userData.level}
-            experience={userData.experience}
-            experienceToNextLevel={(userData.level + 1) * 100}
-          />
-        </Paper>
-      )}
+      <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 2 }}>
+        <UserLevel
+          level={userData.level}
+          experience={userData.experience}
+          experienceToNextLevel={(userData.level + 1) * 100}
+        />
+      </Paper>
 
       <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 2 }}>
         <Typography variant="h6" gutterBottom align="center">User Stats</Typography>
         <Grid container spacing={2} justifyContent="center">
           <Grid item xs={6} sm={4} md={2}>
-            <StatItem label="Jokes Submitted" value={userData?.totalJokesSubmitted || 0} />
+            <StatItem label="Jokes Submitted" value={userData.totalJokesSubmitted || 0} />
           </Grid>
           <Grid item xs={6} sm={4} md={2}>
-            <StatItem label="Ratings Received" value={userData?.totalRatingsReceived || 0} />
+            <StatItem label="Ratings Received" value={userData.totalRatingsReceived || 0} />
           </Grid>
           <Grid item xs={6} sm={4} md={2}>
-            <StatItem label="Ratings Given" value={userData?.totalRatingsGiven || 0} />
+            <StatItem label="Ratings Given" value={userData.totalRatingsGiven || 0} />
           </Grid>
           <Grid item xs={6} sm={4} md={2}>
-            <StatItem label="Favorites Received" value={userData?.totalFavoritesReceived || 0} />
+            <StatItem label="Favorites Received" value={userData.totalFavoritesReceived || 0} />
           </Grid>
           <Grid item xs={6} sm={4} md={2}>
-            <StatItem label="Average Rating" value={(userData?.averageRating || 0).toFixed(2)} />
+            <StatItem label="Average Rating" value={(userData.averageRating || 0).toFixed(2)} />
           </Grid>
         </Grid>
       </Paper>
@@ -271,8 +295,10 @@ const UserProfile: React.FC = () => {
       >
         <Tab label="Submitted Jokes" />
         <Tab label="Favorite Jokes" />
-        <Tab label="Your Comments" />
+        <Tab label="Comments" />
         <Tab label="Achievements" />
+        <Tab label="Followers" />
+        <Tab label="Following" />
       </Tabs>
 
       <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
@@ -290,7 +316,7 @@ const UserProfile: React.FC = () => {
               </Box>
             ))
           ) : (
-            <Typography align="center">You haven't submitted any jokes yet.</Typography>
+            <Typography align="center">No jokes submitted yet.</Typography>
           )
         )}
         {activeTab === 1 && (
@@ -307,7 +333,7 @@ const UserProfile: React.FC = () => {
               </Box>
             ))
           ) : (
-            <Typography align="center">You haven't favorited any jokes yet.</Typography>
+            <Typography align="center">No favorite jokes yet.</Typography>
           )
         )}
         {activeTab === 2 && (
@@ -323,7 +349,7 @@ const UserProfile: React.FC = () => {
               ))}
             </List>
           ) : (
-            <Typography align="center">You haven't made any comments yet.</Typography>
+            <Typography align="center">No comments made yet.</Typography>
           )
         )}
         {activeTab === 3 && (
@@ -347,8 +373,14 @@ const UserProfile: React.FC = () => {
               ))}
             </Grid>
           ) : (
-            <Typography align="center">You haven't unlocked any achievements yet. Keep using the app to earn achievements!</Typography>
+            <Typography align="center">No achievements unlocked yet. Keep using the app to earn achievements!</Typography>
           )
+        )}
+        {activeTab === 4 && (
+          <FollowersList userId={userId || ''} type="followers" />
+        )}
+        {activeTab === 5 && (
+          <FollowersList userId={userId || ''} type="following" />
         )}
       </Paper>
 
