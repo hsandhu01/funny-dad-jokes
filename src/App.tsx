@@ -197,6 +197,11 @@ const App: React.FC = () => {
     }
   }, [jokes, isMobile, getRandomJokes]);
 
+  const handleGetRandomJoke = () => {
+    const newRandomJoke = getRandomJokes(1)[0];
+    setRandomJoke(newRandomJoke);
+  };
+
   const rateJoke = async (jokeId: string, rating: number) => {
     if (user) {
       const jokeRef = doc(db, 'jokes', jokeId);
@@ -512,7 +517,7 @@ const App: React.FC = () => {
                 <Routes>
                   <Route path="/" element={
                     <>
-                      <HeroSection onGetRandomJoke={getRandomJokes} isMobile={isMobile} />
+                      <HeroSection onGetRandomJoke={handleGetRandomJoke} isMobile={isMobile} />
                       {randomJoke && (
                         <Box sx={{ my: 4, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                           <Typography variant="h5" gutterBottom>Random Joke</Typography>

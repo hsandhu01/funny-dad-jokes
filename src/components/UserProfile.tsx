@@ -77,7 +77,7 @@ interface Achievement {
 
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const navigate = useNavigate(); // Added navigate initialization
+  const navigate = useNavigate();
   const [submittedJokes, setSubmittedJokes] = useState<Joke[]>([]);
   const [favoriteJokes, setFavoriteJokes] = useState<Joke[]>([]);
   const [userComments, setUserComments] = useState<Comment[]>([]);
@@ -116,11 +116,11 @@ const UserProfile: React.FC = () => {
           await fetchAchievements(uid);
         } else {
           console.error("User document does not exist");
-          navigate('/'); // Ensure navigate is defined
+          navigate('/');
         }
       } else {
         console.error("No user ID available");
-        navigate('/'); // Ensure navigate is defined
+        navigate('/');
       }
       setLoading(false);
     };
@@ -311,49 +311,102 @@ const UserProfile: React.FC = () => {
       </Paper>
 
       <Tabs 
-  value={activeTab} 
-  onChange={handleTabChange} 
-  variant={isMobile ? "scrollable" : "fullWidth"}
-  scrollButtons="auto"
-  sx={{ mb: 2 }}
->
-  <Tab label="Submitted Jokes" />
-  <Tab label="Favorite Jokes" />
-  <Tab label="Comments" />
-  <Tab label="Achievements" />
-  <Tab label="Followers" />
-  <Tab label="Following" />
-</Tabs>
+        value={activeTab} 
+        onChange={handleTabChange} 
+        variant={isMobile ? "scrollable" : "fullWidth"}
+        scrollButtons="auto"
+        sx={{ mb: 2 }}
+      >
+        <Tab label="Submitted Jokes" />
+        <Tab label="Favorite Jokes" />
+        <Tab label="Comments" />
+        <Tab label="Achievements" />
+        <Tab label="Followers" />
+        <Tab label="Following" />
+      </Tabs>
 
-<Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
-  <Box hidden={activeTab !== 0}>
-    {submittedJokes.length > 0 ? (
-      submittedJokes.map(joke => (
-        <Box key={joke.id} sx={{ mb: 2 }}>
-          <JokeDisplay 
-            joke={joke} 
-            onRate={() => {}} 
-            onToggleFavorite={() => {}}
-            isFavorite={false}
-          />
-          <Divider sx={{ mt: 2 }} />
-        </Box>
-      ))
-    ) : (
-      <Typography align="center">No jokes submitted yet.</Typography>
-    )}
-  </Box>
-  
-  {/* Repeat for other tabs */}
-  
-  <Box hidden={activeTab !== 4}>
-    <FollowersList userId={userData.uid} type="followers" />
-  </Box>
-  
-  <Box hidden={activeTab !== 5}>
-    <FollowersList userId={userData.uid} type="following" />
-  </Box>
-</Paper>
+      <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
+        {activeTab === 0 && (
+          submittedJokes.length > 0 ? (
+            submittedJokes.map(joke => (
+              <Box key={joke.id} sx={{ mb: 2 }}>
+                <JokeDisplay 
+                  joke={joke} 
+                  onRate={() => {}} 
+                  onToggleFavorite={() => {}}
+                  isFavorite={false}
+                />
+                <Divider sx={{ mt: 2 }} />
+              </Box>
+            ))
+          ) : (
+            <Typography align="center">No jokes submitted yet.</Typography>
+          )
+        )}
+        {activeTab === 1 && (
+          favoriteJokes.length > 0 ? (
+            favoriteJokes.map(joke => (
+              <Box key={joke.id} sx={{ mb: 2 }}>
+                <JokeDisplay 
+                  joke={joke} 
+                  onRate={() => {}} 
+                  onToggleFavorite={() => {}}
+                  isFavorite={true}
+                />
+                <Divider sx={{ mt: 2 }} />
+              </Box>
+            ))
+          ) : (
+            <Typography align="center">No favorite jokes yet.</Typography>
+          )
+        )}
+        {activeTab === 2 && (
+          userComments.length > 0 ? (
+            <List>
+              {userComments.map((comment) => (
+                <ListItem key={comment.id}>
+                  <ListItemText
+                    primary={comment.text}
+                    secondary={`On joke: ${comment.jokeId} - ${comment.createdAt.toLocaleString()}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography align="center">No comments made yet.</Typography>
+          )
+        )}
+        {activeTab === 3 && (
+          achievements.length > 0 ? (
+            <Grid container spacing={2}>
+              {achievements.map((achievement) => (
+                <Grid item xs={12} sm={6} md={4} key={achievement.id}>
+                  <Paper elevation={3} sx={{ p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="h6">{achievement.name}</Typography>
+                      <Typography variant="body2">{achievement.description}</Typography>
+                    </Box>
+                    <Box>
+                      <Box component="span" sx={{ fontSize: 48, mt: 1 }}>{achievement.icon}</Box>
+                      <Typography variant="caption" display="block">
+                        Unlocked: {achievement.unlockedAt.toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Typography align="center">No achievements unlocked yet. Keep using the app to earn achievements!</Typography>
+          )
+        )}
+        {activeTab === 4 && (
+          <FollowersList userId={userData.uid} type="followers" />
+        )}
+        {activeTab === 5 && (
+          <FollowersList userId={userData.uid} type="following" />
+        )}
+      </Paper>
 
       <Modal
         open={isEditModalOpen}

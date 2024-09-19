@@ -3,18 +3,8 @@ import { Box, Typography, Button, Container, useMediaQuery, useTheme } from '@mu
 import { motion } from 'framer-motion';
 import SwipeIcon from '@mui/icons-material/Swipe';
 
-// Define the Joke interface
-interface Joke {
-  id: string;
-  setup: string;
-  punchline: string;
-  category: string;
-  rating: number;
-  ratingCount: number;
-}
-
 interface HeroSectionProps {
-  onGetRandomJoke: (count: number) => Joke[];
+  onGetRandomJoke: () => void;
   isMobile: boolean;
 }
 
@@ -86,7 +76,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetRandomJoke, isMobile }) 
             variant="contained"
             color="secondary"
             size={isSmallScreen ? "medium" : "large"}
-            onClick={() => onGetRandomJoke(1)}
+            onClick={onGetRandomJoke}
             sx={{
               display: 'block',
               mx: 'auto',
