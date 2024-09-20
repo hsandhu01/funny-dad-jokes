@@ -541,28 +541,30 @@ const App: React.FC = () => {
             {drawerContent}
           </Drawer>
 
-          <Box component="main" sx={{ flexGrow: 1 }}>
-            <Container maxWidth="lg">
-              <Box sx={{ maxWidth: 800, margin: '0 auto' }}>
+          <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+            <Container maxWidth="lg" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ maxWidth: 800, margin: '0 auto', width: '100%', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <Routes>
                   <Route path="/" element={
                     isMobile ? (
-                      <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', py: 2 }}>
                         <MobileHeroSection />
-                        {displayedJokes.length > 0 ? (
-                          <SwipeableJokeCard
-                            jokes={displayedJokes}
-                            onRate={rateJoke}
-                            onComment={handleComment}
-                            onFavorite={toggleFavorite}
-                            isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
-                            onShare={handleShare}
-                            fetchComments={fetchComments}
-                            onSwipedAllJokes={handleSwipedAllJokes}
-                          />
-                        ) : (
-                          <Typography>Loading jokes...</Typography>
-                        )}
+                        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {displayedJokes.length > 0 ? (
+                            <SwipeableJokeCard
+                              jokes={displayedJokes}
+                              onRate={rateJoke}
+                              onComment={handleComment}
+                              onFavorite={toggleFavorite}
+                              isFavorite={(jokeId) => favoriteJokes.includes(jokeId)}
+                              onShare={handleShare}
+                              fetchComments={fetchComments}
+                              onSwipedAllJokes={handleSwipedAllJokes}
+                            />
+                          ) : (
+                            <Typography>Loading jokes...</Typography>
+                          )}
+                        </Box>
                       </Box>
                     ) : (
                       <>

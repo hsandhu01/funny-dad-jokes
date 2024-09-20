@@ -65,13 +65,13 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
   const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
     if (info.offset.x > threshold) {
-      await controls.start({ x: "100%", opacity: 0, transition: { duration: 0.2 } });
+      await controls.start({ x: "100%", opacity: 0, rotate: 10, transition: { duration: 0.3 } });
       nextJoke();
     } else if (info.offset.x < -threshold) {
-      await controls.start({ x: "-100%", opacity: 0, transition: { duration: 0.2 } });
+      await controls.start({ x: "-100%", opacity: 0, rotate: -10, transition: { duration: 0.3 } });
       previousJoke();
     } else {
-      controls.start({ x: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 30 } });
+      controls.start({ x: 0, opacity: 1, rotate: 0, transition: { type: "spring", stiffness: 300, damping: 30 } });
     }
   };
 
@@ -97,7 +97,7 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
   const resetCard = () => {
     setShowPunchline(false);
     setComment('');
-    controls.start({ x: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 30 } });
+    controls.start({ x: 0, opacity: 1, rotate: 0, transition: { type: "spring", stiffness: 300, damping: 30 } });
   };
 
   const handleRevealPunchline = () => {
@@ -169,8 +169,7 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
         whileDrag={{
           cursor: 'grabbing',
           scale: 1.05,
-          rotateY: 10,
-          opacity: 0.8
+          boxShadow: "0px 10px 25px rgba(0,0,0,0.1)"
         }}
         transition={{
           type: 'spring',
