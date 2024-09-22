@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Card, CardContent, Typography, Box, Button, TextField, Select, MenuItem, Chip, IconButton, Snackbar } from '@mui/material';
 import { motion, PanInfo, useAnimation } from 'framer-motion';
 import FacebookIcon from '@mui/icons-material/Facebook';
@@ -37,7 +37,7 @@ interface SwipeableJokeCardProps {
   onSwipedAllJokes: () => void;
 }
 
-const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({ 
+const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = memo(({ 
   jokes, onRate, onComment, onFavorite, isFavorite, onShare, fetchComments, onSwipedAllJokes
 }) => {
   const [currentJokeIndex, setCurrentJokeIndex] = useState(0);
@@ -51,27 +51,39 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
 
   const currentJoke = jokes[currentJokeIndex];
 
+  const loadComments = useCallback(async () => {
+    if (currentJoke) {
+      const fetchedComments = await fetchComments(currentJoke.id);
+      setComments(fetchedComments);
+    }
+  }, [currentJoke, fetchComments]);
+
   useEffect(() => {
-    const loadComments = async () => {
-      if (currentJoke) {
-        const fetchedComments = await fetchComments(currentJoke.id);
-        setComments(fetchedComments);
-      }
-    };
     loadComments();
     setShowPunchline(false);
-  }, [currentJoke, fetchComments]);
+  }, [currentJoke, loadComments]);
 
   const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
     if (info.offset.x > threshold) {
       await controls.start({ x: "100%", opacity: 0, rotate: 10, transition: { duration: 0.3 } });
-      nextJoke();
+      handleSwipe('right');
     } else if (info.offset.x < -threshold) {
       await controls.start({ x: "-100%", opacity: 0, rotate: -10, transition: { duration: 0.3 } });
-      previousJoke();
+      handleSwipe('left');
     } else {
       controls.start({ x: 0, opacity: 1, rotate: 0, transition: { type: "spring", stiffness: 300, damping: 30 } });
+    }
+  };
+
+  const handleSwipe = (direction: 'left' | 'right') => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50); // Short vibration for feedback
+    }
+    if (direction === 'right') {
+      nextJoke();
+    } else {
+      previousJoke();
     }
   };
 
@@ -124,8 +136,7 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
       setComment('');
       setSnackbarMessage('Your comment has been submitted!');
       setSnackbarOpen(true);
-      const fetchedComments = await fetchComments(currentJoke.id);
-      setComments(fetchedComments);
+      loadComments();
     }
   };
 
@@ -139,6 +150,13 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
     onShare(platform, currentJoke.id);
     setSnackbarMessage(`Shared on ${platform}`);
     setSnackbarOpen(true);
+  };
+
+  const handleDoubleTap = () => {
+    handleFavorite();
+    if ('vibrate' in navigator) {
+      navigator.vibrate(200); // Longer vibration for double-tap
+    }
   };
 
   return (
@@ -176,8 +194,9 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
           stiffness: 300,
           damping: 20
         }}
+        onDoubleClick={handleDoubleTap}
       >
-        <Card sx={{ maxWidth: '100%', mx: 'auto', my: 2, boxShadow: 3, position: 'relative', overflow: 'visible' }}>
+        <Card sx={{ maxWidth: '100%', mx: 'auto', my: 2, boxShadow: 3, position: 'relative', overflow: 'visible' }} className="joke-card">
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Chip label={currentJoke.category} color="primary" size="small" />
@@ -221,7 +240,7 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, my: 1 }}>
               {['😐', '🙂', '😀', '😆', '🤣'].map((emoji, index) => (
-                <IconButton key={index} onClick={() => handleRate(index + 1)}>
+                <IconButton key={index} onClick={() => handleRate(index + 1)} className="rate-button">
                   {emoji}
                 </IconButton>
               ))}
@@ -298,6 +317,6 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = ({
       />
     </motion.div>
   );
-};
+});
 
 export default SwipeableJokeCard;

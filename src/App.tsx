@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { collection, getDocs, query, where, CollectionReference, Query, addDoc, updateDoc, doc, deleteDoc, limit, increment, getDoc } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth } from './firebase';
 import JokeDisplay from '../src/components/JokeDisplay';
+import SwipeableJokeCard from '../src/components/SwipeableJokeCard';
 import JokeSubmissionForm from '../src/components/JokeSubmissionForm';
 import Auth from '../src/components/Auth';
 import UserProfile from '../src/components/UserProfile';
@@ -12,7 +13,7 @@ import JokeSearch from '../src/components/JokeSearch';
 import HeroSection from '../src/components/HeroSection';
 import NotificationComponent from '../src/components/NotificationComponent';
 import LoginPage from '../src/components/LoginPage';
-import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Box, FormControl, InputLabel, Select, MenuItem, IconButton, Menu, Divider, Drawer, List, ListItem, ListItemText, ListItemIcon, Avatar, useMediaQuery, Paper } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
@@ -28,6 +29,8 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SwipeLeftIcon from '@mui/icons-material/SwipeLeft';
 import SwipeRightIcon from '@mui/icons-material/SwipeRight';
 import { AnimatePresence, motion } from 'framer-motion';
+import InfiniteScroll from 'react-infinite-scroll-component';
+import Joyride, { Step } from 'react-joyride';
 import './App.css';
 import { checkAchievements } from './utils/achievementChecker';
 import { updateUserLevel } from './utils/userLevelUtils';
@@ -40,7 +43,8 @@ import CategoryJokesPage from '../src/components/CategoryJokesPage';
 import JokeSubmissionModal from '../src/components/JokeSubmissionModal';
 import NotificationSettings from '../src/components/NotificationSettings';
 import Footer from './components/Footer';
-import SwipeableJokeCard from './components/SwipeableJokeCard';
+import { JokeProvider, useJokes } from '../src/contexts/JokeContext';
+import JokeBattle from './components/JokeBattle';
 
 interface Joke {
   id: string;
@@ -119,6 +123,8 @@ const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showJokeSubmissionModal, setShowJokeSubmissionModal] = useState(false);
+  const [showAppTour, setShowAppTour] = useState(true);
+  const [dailyChallenge, setDailyChallenge] = useState<{ id: string; description: string } | null>(null);
 
   const theme = getTheme(darkMode ? 'dark' : 'light');
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -189,7 +195,7 @@ const App: React.FC = () => {
     fetchJokeOfTheDay();
   }, []);
 
-  const getRandomJokes = useCallback((count: number): Joke[] => {
+  const getRandomJokes = useMemo(() => (count: number): Joke[] => {
     return [...jokes]
       .sort(() => Math.random() - 0.5)
       .slice(0, count);
@@ -201,6 +207,17 @@ const App: React.FC = () => {
       setDisplayedJokes(getRandomJokes(10));
     }
   }, [jokes, getRandomJokes]);
+
+  const fetchDailyChallenge = useCallback(async () => {
+    const challengeDoc = await getDoc(doc(db, 'dailyChallenges', new Date().toISOString().split('T')[0]));
+    if (challengeDoc.exists()) {
+      setDailyChallenge({ id: challengeDoc.id, ...challengeDoc.data() as { description: string } });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDailyChallenge();
+  }, [fetchDailyChallenge]);
 
   const handleGetRandomJoke = () => {
     const newRandomJoke = getRandomJokes(1)[0];
@@ -413,13 +430,31 @@ const App: React.FC = () => {
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date()
     } as Comment));
   };
 
   const handleSwipedAllJokes = () => {
     setDisplayedJokes(getRandomJokes(10));
   };
+
+  const handleLoadMore = () => {
+    const newJokes = getRandomJokes(10);
+    setDisplayedJokes(prevJokes => [...prevJokes, ...newJokes]);
+  };
+
+  const steps: Step[] = [
+    {
+      target: '.joke-card',
+      content: 'This is a joke card. Swipe left or right to see more jokes!',
+    },
+    {
+      target: '.rate-button',
+      content: 'Rate the jokes you like to help them climb the leaderboard!',
+    },
+    // will add more steps as needed
+  ];
 
   const MobileHeroSection: React.FC = () => (
     <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 4, background: theme.palette.background.paper }}>
@@ -617,22 +652,25 @@ const App: React.FC = () => {
                           </Box>
                         )}
 
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
-                          {displayedJokes.map(joke => (
-                            <Box key={joke.id} sx={{ width: '100%' }}>
-                              <JokeDisplay 
-                                joke={joke} 
-                                onRate={(rating) => rateJoke(joke.id, rating)}
-                                onToggleFavorite={() => toggleFavorite(joke.id)}
-                                isFavorite={favoriteJokes.includes(joke.id)}
-                              />
-                            </Box>
-                          ))}
-                        </Box>
-
-                        <Button variant="contained" onClick={() => setDisplayedJokes(getRandomJokes(10))} sx={{ mt: 2 }}>
-                          Get More Jokes
-                        </Button>
+                        <InfiniteScroll
+                          dataLength={displayedJokes.length}
+                          next={handleLoadMore}
+                          hasMore={displayedJokes.length < jokes.length}
+                          loader={<h4>Loading...</h4>}
+                        >
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+                            {displayedJokes.map(joke => (
+                              <Box key={joke.id} sx={{ width: '100%' }}>
+                                <JokeDisplay 
+                                  joke={joke} 
+                                  onRate={(rating) => rateJoke(joke.id, rating)}
+                                  onToggleFavorite={() => toggleFavorite(joke.id)}
+                                  isFavorite={favoriteJokes.includes(joke.id)}
+                                />
+                              </Box>
+                            ))}
+                          </Box>
+                        </InfiniteScroll>
 
                         <Leaderboard />
                         <JokeSearch />
@@ -646,6 +684,7 @@ const App: React.FC = () => {
                   <Route path="/notification-settings" element={<NotificationSettings />} />
                   <Route path="/login" element={<LoginPage signIn={signIn} />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/joke-battle" element={<JokeBattle />} />
                 </Routes>
               </Box>
             </Container>
@@ -657,6 +696,25 @@ const App: React.FC = () => {
           onClose={() => setShowJokeSubmissionModal(false)}
           onSubmit={submitJoke}
         />
+        {showAppTour && (
+          <Joyride
+            steps={steps}
+            run={showAppTour}
+            continuous={true}
+            showSkipButton={true}
+            styles={{
+              options: {
+                zIndex: 10000,
+              },
+            }}
+            callback={(data) => {
+              const { status } = data;
+              if (['finished', 'skipped'].includes(status)) {
+                setShowAppTour(false);
+              }
+            }}
+          />
+        )}
       </ThemeProvider>
     </Router>
   );
