@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Button, Paper, CircularProgress } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useJokes, Joke } from '../contexts/JokeContext';
@@ -10,13 +10,7 @@ const JokeBattle: React.FC = () => {
   const [winner, setWinner] = useState<'left' | 'right' | null>(null);
   const [battleCount, setBattleCount] = useState(0);
 
-  useEffect(() => {
-    if (jokes.length >= 2) {
-      setNewJokes();
-    }
-  }, [jokes]);
-
-  const setNewJokes = () => {
+  const setNewJokes = useCallback(() => {
     let newLeft = getRandomJoke();
     let newRight = getRandomJoke();
     while (newRight?.id === newLeft?.id) {
@@ -25,7 +19,13 @@ const JokeBattle: React.FC = () => {
     setLeftJoke(newLeft);
     setRightJoke(newRight);
     setWinner(null);
-  };
+  }, [getRandomJoke]);
+
+  useEffect(() => {
+    if (jokes.length >= 2) {
+      setNewJokes();
+    }
+  }, [jokes, setNewJokes]);
 
   const handleVote = (side: 'left' | 'right') => {
     setWinner(side);
