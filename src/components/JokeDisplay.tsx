@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, Typography, Box, Chip, Button, IconButton, Snackbar, Grow } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, Button, IconButton, Snackbar, Grow, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FacebookShareButton, TwitterShareButton, WhatsappShareButton, EmailShareButton } from 'react-share';
 import FacebookIcon from '@mui/icons-material/Facebook';
@@ -8,6 +8,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import DeleteIcon from '@mui/icons-material/Delete';
 import VoiceReader from './VoiceReader';
 import CommentSection from './CommentSection';
 
@@ -19,24 +20,27 @@ interface JokeDisplayProps {
     category: string;
     rating: number;
     ratingCount: number;
+    userId: string;
   };
   onRate: (rating: number) => void;
   onToggleFavorite: (jokeId: string) => void;
   isFavorite: boolean;
+  onDelete?: () => void;
 }
 
 const emojis = [
   { emoji: '😐', rating: 1, label: 'Meh' },
   { emoji: '🙂', rating: 2, label: 'Okay' },
-  { emoji: '😄', rating: 3, label: 'Good' },
+  { emoji: '😀', rating: 3, label: 'Good' },
   { emoji: '😆', rating: 4, label: 'Great' },
   { emoji: '🤣', rating: 5, label: 'Hilarious' },
 ];
 
-const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorite, isFavorite }) => {
+const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorite, isFavorite, onDelete }) => {
   const [userRating, setUserRating] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showPunchline, setShowPunchline] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const shareUrl = `${window.location.origin}/joke/${joke.id}`;
   const shareTitle = `Check out this dad joke: ${joke.setup}`;
 
@@ -137,6 +141,7 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
             <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1, mb: 2 }}>
               {joke.ratingCount} votes • Average: {joke.rating.toFixed(1)}
             </Typography>
+
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
               <FacebookShareButton url={shareUrl} title={shareTitle}>
                 <IconButton color="primary" aria-label="share on facebook">
@@ -174,9 +179,42 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
                 </IconButton>
               </motion.div>
             </Box>
+            {onDelete && (
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                <IconButton onClick={() => setOpenDeleteDialog(true)} color="error">
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            )}
             <CommentSection jokeId={joke.id} />
           </CardContent>
         </Card>
+        
+        {onDelete && (
+          <Dialog
+            open={openDeleteDialog}
+            onClose={() => setOpenDeleteDialog(false)}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle id="alert-dialog-title">{"Delete this joke?"}</DialogTitle>
+            <DialogContent>
+              <DialogContentText id="alert-dialog-description">
+                Are you sure you want to delete this joke? This action cannot be undone.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
+              <Button onClick={() => {
+                onDelete();
+                setOpenDeleteDialog(false);
+              }} color="error" autoFocus>
+                Delete
+              </Button>
+            </DialogActions>
+          </Dialog>
+        )}
+
         <Snackbar
           open={showFeedback}
           autoHideDuration={3000}

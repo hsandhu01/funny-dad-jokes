@@ -20,7 +20,9 @@ import {
   Chip,
   Divider,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -30,6 +32,7 @@ import UserLevel from './UserLevel';
 import EditProfile from './EditProfile';
 import FollowersList from './FollowersList';
 import { useSocial } from '../hooks/useSocial';
+import { useJokes } from '../contexts/JokeContext';
 
 interface UserData {
   id: string;
@@ -91,6 +94,8 @@ const UserProfile: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isFollowing, followersCount, followingCount, follow, unfollow } = useSocial(userId || '');
+  const { deleteJoke } = useJokes();
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -201,6 +206,17 @@ const UserProfile: React.FC = () => {
       await unfollow();
     } else {
       await follow();
+    }
+  };
+
+  const handleDeleteJoke = async (jokeId: string) => {
+    try {
+      await deleteJoke(jokeId);
+      setSubmittedJokes(prevJokes => prevJokes.filter(joke => joke.id !== jokeId));
+      setSnackbar({ open: true, message: 'Joke deleted successfully', severity: 'success' });
+    } catch (error) {
+      console.error("Error deleting joke:", error);
+      setSnackbar({ open: true, message: 'Failed to delete joke', severity: 'error' });
     }
   };
 
@@ -326,23 +342,24 @@ const UserProfile: React.FC = () => {
       </Tabs>
 
       <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
-        {activeTab === 0 && (
-          submittedJokes.length > 0 ? (
-            submittedJokes.map(joke => (
-              <Box key={joke.id} sx={{ mb: 2 }}>
-                <JokeDisplay 
-                  joke={joke} 
-                  onRate={() => {}} 
-                  onToggleFavorite={() => {}}
-                  isFavorite={false}
-                />
-                <Divider sx={{ mt: 2 }} />
-              </Box>
-            ))
-          ) : (
-            <Typography align="center">No jokes submitted yet.</Typography>
-          )
-        )}
+      {activeTab === 0 && (
+  submittedJokes.length > 0 ? (
+    submittedJokes.map(joke => (
+      <Box key={joke.id} sx={{ mb: 2 }}>
+        <JokeDisplay 
+          joke={joke} 
+          onRate={() => {}} 
+          onToggleFavorite={() => {}}
+          isFavorite={false}
+          onDelete={isCurrentUser ? () => handleDeleteJoke(joke.id) : undefined}
+        />
+        <Divider sx={{ mt: 2 }} />
+      </Box>
+    ))
+  ) : (
+    <Typography align="center">No jokes submitted yet.</Typography>
+  )
+)}
         {activeTab === 1 && (
           favoriteJokes.length > 0 ? (
             favoriteJokes.map(joke => (
@@ -376,7 +393,7 @@ const UserProfile: React.FC = () => {
             <Typography align="center">No comments made yet.</Typography>
           )
         )}
-        {activeTab === 3 && (
+{activeTab === 3 && (
           achievements.length > 0 ? (
             <Grid container spacing={2}>
               {achievements.map((achievement) => (
@@ -429,6 +446,16 @@ const UserProfile: React.FC = () => {
           )}
         </Box>
       </Modal>
+
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

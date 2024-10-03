@@ -12,6 +12,7 @@ interface Joke {
   category: string;
   rating: number;
   ratingCount: number;
+  userId: string;
 }
 
 const CategoryJokesPage: React.FC = () => {

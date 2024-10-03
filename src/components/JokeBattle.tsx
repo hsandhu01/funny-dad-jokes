@@ -1,36 +1,47 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Box, Typography, Button, Paper, CircularProgress } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useJokes, Joke } from '../contexts/JokeContext';
 
 const JokeBattle: React.FC = () => {
-  const { jokes, loading, error, getRandomJoke } = useJokes();
+  const { jokes, loading, error } = useJokes();
   const [leftJoke, setLeftJoke] = useState<Joke | null>(null);
   const [rightJoke, setRightJoke] = useState<Joke | null>(null);
   const [winner, setWinner] = useState<'left' | 'right' | null>(null);
   const [battleCount, setBattleCount] = useState(0);
 
+  const getRandomJoke = useCallback(() => {
+    if (jokes.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * jokes.length);
+    return jokes[randomIndex];
+  }, [jokes]);
+
   const setNewJokes = useCallback(() => {
+    console.log("setNewJokes called");
+    if (jokes.length < 2) {
+      console.log("Not enough jokes to start a battle");
+      return;
+    }
     let newLeft = getRandomJoke();
     let newRight = getRandomJoke();
     while (newRight?.id === newLeft?.id) {
       newRight = getRandomJoke();
     }
+    console.log("New jokes:", newLeft, newRight);
     setLeftJoke(newLeft);
     setRightJoke(newRight);
     setWinner(null);
-  }, [getRandomJoke]);
+  }, [getRandomJoke, jokes.length]);
 
   useEffect(() => {
-    if (jokes.length >= 2) {
+    if (jokes.length >= 2 && (!leftJoke || !rightJoke)) {
       setNewJokes();
     }
-  }, [jokes, setNewJokes]);
+  }, [jokes, leftJoke, rightJoke, setNewJokes]);
 
   const handleVote = (side: 'left' | 'right') => {
     setWinner(side);
     setBattleCount(prev => prev + 1);
-    setTimeout(setNewJokes, 2000);
   };
 
   const JokeCard: React.FC<{ joke: Joke | null; side: 'left' | 'right' }> = ({ joke, side }) => {
@@ -103,8 +114,14 @@ const JokeBattle: React.FC = () => {
           </AnimatePresence>
         </Box>
       </Box>
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Button variant="outlined" onClick={setNewJokes}>
+      <Box sx={{ mt: 4, textAlign: 'center', padding: 2 }}>
+        <Button 
+          variant="outlined" 
+          onClick={() => {
+            console.log("New Battle clicked");
+            setNewJokes();
+          }}
+        >
           New Battle
         </Button>
       </Box>
