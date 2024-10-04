@@ -2,7 +2,6 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -12,7 +11,18 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
+console.log('Initializing Firebase with config:', {
+  ...firebaseConfig,
+  apiKey: firebaseConfig.apiKey ? '[REDACTED]' : undefined,
+});
+
 const app = initializeApp(firebaseConfig);
+console.log('Firebase app initialized successfully.');
+
 export const db = getFirestore(app);
+console.log('Firestore initialized successfully.');
+
 export const auth = getAuth(app);
+console.log('Auth initialized successfully.');
+
 export { firebaseConfig };

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { collection, getDocs, query, where, orderBy, limit, DocumentData, QueryDocumentSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -27,12 +27,13 @@ interface JokeContextType {
 
 const JokeContext = createContext<JokeContextType | undefined>(undefined);
 
-export const JokeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const JokeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [jokes, setJokes] = useState<Joke[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchJokes = useCallback(async (category?: string) => {
+    console.log('Fetching jokes...');
     setLoading(true);
     setError(null);
     try {
@@ -43,9 +44,8 @@ export const JokeProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         jokesQuery = query(jokesQuery, where('category', '==', category));
       }
 
-      console.log('Fetching jokes...'); // Debug log
       const querySnapshot = await getDocs(jokesQuery);
-      console.log('Jokes fetched:', querySnapshot.size); // Debug log
+      console.log('Jokes fetched:', querySnapshot.size);
 
       const fetchedJokes: Joke[] = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
         id: doc.id,
@@ -53,6 +53,7 @@ export const JokeProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         createdAt: doc.data().createdAt?.toDate() || new Date()
       }));
 
+      console.log('Processed jokes:', fetchedJokes);
       setJokes(fetchedJokes);
     } catch (err) {
       console.error('Error fetching jokes:', err);
@@ -61,10 +62,6 @@ export const JokeProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchJokes();
-  }, [fetchJokes]);
 
   const getRandomJoke = useCallback(() => {
     if (jokes.length === 0) return null;
@@ -86,7 +83,7 @@ export const JokeProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         createdAt: new Date()
       });
       console.log('New joke added with ID:', newJokeRef.id);
-      await fetchJokes(); // Refresh jokes after adding
+      await fetchJokes();
     } catch (err) {
       console.error('Error adding new joke:', err);
       throw err;
@@ -98,7 +95,7 @@ export const JokeProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const jokeRef = doc(db, 'jokes', id);
       await updateDoc(jokeRef, updates);
       console.log('Joke updated:', id);
-      await fetchJokes(); // Refresh jokes after updating
+      await fetchJokes();
     } catch (err) {
       console.error('Error updating joke:', err);
       throw err;
@@ -110,11 +107,15 @@ export const JokeProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const jokeRef = doc(db, 'jokes', id);
       await deleteDoc(jokeRef);
       console.log('Joke deleted:', id);
-      await fetchJokes(); // Refresh jokes after deleting
+      await fetchJokes();
     } catch (err) {
       console.error('Error deleting joke:', err);
       throw err;
     }
+  }, [fetchJokes]);
+
+  useEffect(() => {
+    fetchJokes();
   }, [fetchJokes]);
 
   const value = {
