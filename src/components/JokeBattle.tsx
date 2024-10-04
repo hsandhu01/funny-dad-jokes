@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Box, Typography, Button, Paper, CircularProgress } from '@mui/material';
-import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { collection, getDocs, query, limit, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 
 interface Joke {
@@ -10,6 +10,8 @@ interface Joke {
   category: string;
   rating: number;
   ratingCount: number;
+  wins: number;
+  losses: number;
 }
 
 const JokeBattle: React.FC = () => {
@@ -24,28 +26,17 @@ const JokeBattle: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching jokes...');
       const jokesRef = collection(db, 'jokes');
-      console.log('Jokes collection reference:', jokesRef);
       const jokesQuery = query(jokesRef, limit(100));
-      console.log('Jokes query:', jokesQuery);
       const querySnapshot = await getDocs(jokesQuery);
-      console.log('Query snapshot:', querySnapshot);
       
-      const fetchedJokes = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log('Joke document:', doc.id, data);
-        return {
-          id: doc.id,
-          setup: data.setup,
-          punchline: data.punchline,
-          category: data.category,
-          rating: data.rating,
-          ratingCount: data.ratingCount
-        } as Joke;
-      });
+      const fetchedJokes = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        wins: doc.data().wins || 0,
+        losses: doc.data().losses || 0
+      } as Joke));
       
-      console.log('Fetched jokes:', fetchedJokes);
       setJokes(fetchedJokes);
     } catch (err) {
       console.error('Error fetching jokes:', err);
@@ -72,10 +63,38 @@ const JokeBattle: React.FC = () => {
     }
   }, [jokes, setNewJokes]);
 
-  const handleVote = (side: 'left' | 'right') => {
-    console.log(`Voted for ${side} joke`);
-    setBattleCount(prev => prev + 1);
-    setNewJokes();
+  const handleVote = async (side: 'left' | 'right') => {
+    if (!leftJoke || !rightJoke) return;
+
+    const winner = side === 'left' ? leftJoke : rightJoke;
+    const loser = side === 'left' ? rightJoke : leftJoke;
+
+    try {
+      // Update winner
+      const winnerRef = doc(db, 'jokes', winner.id);
+      await updateDoc(winnerRef, {
+        wins: increment(1)
+      });
+
+      // Update loser
+      const loserRef = doc(db, 'jokes', loser.id);
+      await updateDoc(loserRef, {
+        losses: increment(1)
+      });
+
+      // Update local state
+      setJokes(jokes.map(joke => 
+        joke.id === winner.id ? { ...joke, wins: joke.wins + 1 } :
+        joke.id === loser.id ? { ...joke, losses: joke.losses + 1 } :
+        joke
+      ));
+
+      setBattleCount(prev => prev + 1);
+      setNewJokes();
+    } catch (err) {
+      console.error('Error updating joke win/loss:', err);
+      setError(`Failed to update joke win/loss. Error: ${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 
   if (loading) {
@@ -101,6 +120,9 @@ const JokeBattle: React.FC = () => {
           <Paper sx={{ width: '45%', p: 2 }}>
             <Typography variant="h6">{leftJoke.setup}</Typography>
             <Typography variant="body1">{leftJoke.punchline}</Typography>
+            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+              Wins: {leftJoke.wins} | Losses: {leftJoke.losses}
+            </Typography>
             <Button onClick={() => handleVote('left')} variant="contained" sx={{ mt: 2 }}>
               Vote Left
             </Button>
@@ -111,6 +133,9 @@ const JokeBattle: React.FC = () => {
           <Paper sx={{ width: '45%', p: 2 }}>
             <Typography variant="h6">{rightJoke.setup}</Typography>
             <Typography variant="body1">{rightJoke.punchline}</Typography>
+            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+              Wins: {rightJoke.wins} | Losses: {rightJoke.losses}
+            </Typography>
             <Button onClick={() => handleVote('right')} variant="contained" sx={{ mt: 2 }}>
               Vote Right
             </Button>
