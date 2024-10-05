@@ -1,5 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Typography, Button, Paper, CircularProgress } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Button, CircularProgress, Container, Grid, Card, CardContent, CardActions, Divider } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import { motion } from 'framer-motion';
 import { collection, getDocs, query, limit, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -13,6 +15,18 @@ interface Joke {
   wins: number;
   losses: number;
 }
+
+const JokeCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    boxShadow: theme.shadows[10],
+  },
+}));
 
 const JokeBattle: React.FC = () => {
   const [jokes, setJokes] = useState<Joke[]>([]);
@@ -72,15 +86,11 @@ const JokeBattle: React.FC = () => {
     try {
       // Update winner
       const winnerRef = doc(db, 'jokes', winner.id);
-      await updateDoc(winnerRef, {
-        wins: increment(1)
-      });
+      await updateDoc(winnerRef, { wins: increment(1) });
 
       // Update loser
       const loserRef = doc(db, 'jokes', loser.id);
-      await updateDoc(loserRef, {
-        losses: increment(1)
-      });
+      await updateDoc(loserRef, { losses: increment(1) });
 
       // Update local state
       setJokes(jokes.map(joke => 
@@ -98,59 +108,103 @@ const JokeBattle: React.FC = () => {
   };
 
   if (loading) {
-    return <CircularProgress />;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (error) {
-    return <Typography color="error">{error}</Typography>;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
   }
 
   if (jokes.length < 2) {
-    return <Typography>Not enough jokes available for a battle. Please add more jokes! (Total jokes: {jokes.length})</Typography>;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <Typography>Not enough jokes available for a battle. Please add more jokes!</Typography>
+      </Box>
+    );
   }
 
   return (
-    <Box sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom align="center">Joke Battle</Typography>
-      <Typography variant="subtitle1" gutterBottom align="center">
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h2" align="center" gutterBottom>
+        Joke Battle
+      </Typography>
+      <Typography variant="subtitle1" align="center" gutterBottom>
         Vote for your favorite joke! Battles fought: {battleCount}
       </Typography>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-        {leftJoke && (
-          <Paper sx={{ width: '45%', p: 2 }}>
-            <Typography variant="h6">{leftJoke.setup}</Typography>
-            <Typography variant="body1">{leftJoke.punchline}</Typography>
-            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-              Wins: {leftJoke.wins} | Losses: {leftJoke.losses}
-            </Typography>
-            <Button onClick={() => handleVote('left')} variant="contained" sx={{ mt: 2 }}>
-              Vote Left
-            </Button>
-          </Paper>
+      <Grid container spacing={4} justifyContent="center" alignItems="stretch" sx={{ mt: 4 }}>
+        {leftJoke && rightJoke && (
+          <>
+            <Grid item xs={12} md={5}>
+              <motion.div whileHover={{ scale: 1.03 }}>
+                <JokeCard>
+                  <CardContent>
+                    <Typography variant="h5" gutterBottom>{leftJoke.setup}</Typography>
+                    <Typography variant="body1">{leftJoke.punchline}</Typography>
+                  </CardContent>
+                  <Divider />
+                  <CardActions sx={{ justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+                    <Typography variant="caption">
+                      Wins: {leftJoke.wins} | Losses: {leftJoke.losses}
+                    </Typography>
+                    <Button
+                      onClick={() => handleVote('left')}
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                    >
+                      Vote Left
+                    </Button>
+                  </CardActions>
+                </JokeCard>
+              </motion.div>
+            </Grid>
+            <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Typography variant="h3" sx={{ fontWeight: 'bold' }}>VS</Typography>
+            </Grid>
+            <Grid item xs={12} md={5}>
+              <motion.div whileHover={{ scale: 1.03 }}>
+                <JokeCard>
+                  <CardContent>
+                    <Typography variant="h5" gutterBottom>{rightJoke.setup}</Typography>
+                    <Typography variant="body1">{rightJoke.punchline}</Typography>
+                  </CardContent>
+                  <Divider />
+                  <CardActions sx={{ justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+                    <Typography variant="caption">
+                      Wins: {rightJoke.wins} | Losses: {rightJoke.losses}
+                    </Typography>
+                    <Button
+                      onClick={() => handleVote('right')}
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                    >
+                      Vote Right
+                    </Button>
+                  </CardActions>
+                </JokeCard>
+              </motion.div>
+            </Grid>
+          </>
         )}
-        <Typography variant="h4" sx={{ alignSelf: 'center' }}>VS</Typography>
-        {rightJoke && (
-          <Paper sx={{ width: '45%', p: 2 }}>
-            <Typography variant="h6">{rightJoke.setup}</Typography>
-            <Typography variant="body1">{rightJoke.punchline}</Typography>
-            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-              Wins: {rightJoke.wins} | Losses: {rightJoke.losses}
-            </Typography>
-            <Button onClick={() => handleVote('right')} variant="contained" sx={{ mt: 2 }}>
-              Vote Right
-            </Button>
-          </Paper>
-        )}
-      </Box>
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Button onClick={setNewJokes} variant="outlined">
+      </Grid>
+      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+        <Button onClick={setNewJokes} variant="outlined" size="large">
           New Battle
         </Button>
       </Box>
       <Typography variant="body2" align="center" sx={{ mt: 2 }}>
         Total jokes available: {jokes.length}
       </Typography>
-    </Box>
+    </Container>
   );
 };
 
