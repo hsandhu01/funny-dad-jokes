@@ -78,7 +78,7 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = memo(({
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if ('vibrate' in navigator) {
-      navigator.vibrate(50); // Short vibration for feedback
+      navigator.vibrate(50);
     }
     if (direction === 'right') {
       nextJoke();
@@ -155,7 +155,7 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = memo(({
   const handleDoubleTap = () => {
     handleFavorite();
     if ('vibrate' in navigator) {
-      navigator.vibrate(200); // Longer vibration for double-tap
+      navigator.vibrate(200);
     }
   };
 
@@ -196,7 +196,19 @@ const SwipeableJokeCard: React.FC<SwipeableJokeCardProps> = memo(({
         }}
         onDoubleClick={handleDoubleTap}
       >
-        <Card sx={{ maxWidth: '100%', mx: 'auto', my: 2, boxShadow: 3, position: 'relative', overflow: 'visible' }} className="joke-card">
+        <Card 
+          sx={{ 
+            maxWidth: '100%', 
+            mx: 'auto', 
+            my: 2, 
+            boxShadow: 3, 
+            position: 'relative', 
+            overflow: 'visible',
+            background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
+            borderRadius: 4,
+          }} 
+          className="joke-card"
+        >
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Chip label={currentJoke.category} color="primary" size="small" />
