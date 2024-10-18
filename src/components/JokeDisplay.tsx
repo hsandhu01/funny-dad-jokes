@@ -89,11 +89,20 @@ const JokeDisplay: React.FC<JokeDisplayProps> = ({ joke, onRate, onToggleFavorit
             <Typography variant="h5" component="div" gutterBottom sx={{ mt: 2, fontWeight: 'bold' }}>
               {joke.setup}
             </Typography>
-            <Grow in={showPunchline} timeout={1000}>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
-                {joke.punchline}
-              </Typography>
-            </Grow>
+            <AnimatePresence>
+              {showPunchline && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
+                    {joke.punchline}
+                  </Typography>
+                </motion.div>
+              )}
+            </AnimatePresence>
             {!showPunchline && (
               <Button 
                 onClick={() => setShowPunchline(true)} 

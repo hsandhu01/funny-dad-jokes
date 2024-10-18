@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Button, CircularProgress, Container, Grid, Card, CardContent, CardActions, Divider } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { collection, getDocs, query, limit, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
+import Confetti from './Confetti';
 
 interface Joke {
   id: string;
@@ -16,16 +17,26 @@ interface Joke {
   losses: number;
 }
 
-const JokeCard = styled(Card)(({ theme }) => ({
+const JokeCard = styled(motion.div)(({ theme }) => ({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'space-between',
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: theme.shadows[3],
   transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
   '&:hover': {
     transform: 'translateY(-5px)',
     boxShadow: theme.shadows[10],
   },
+}));
+
+const ArenaBackground = styled(Box)(({ theme }) => ({
+  background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+  borderRadius: theme.shape.borderRadius,
+  padding: theme.spacing(3),
+  marginBottom: theme.spacing(3),
 }));
 
 const JokeBattle: React.FC = () => {
@@ -35,6 +46,8 @@ const JokeBattle: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [battleCount, setBattleCount] = useState(0);
+  const [winner, setWinner] = useState<'left' | 'right' | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const fetchJokes = useCallback(async () => {
     setLoading(true);
@@ -69,6 +82,7 @@ const JokeBattle: React.FC = () => {
     const shuffled = [...jokes].sort(() => 0.5 - Math.random());
     setLeftJoke(shuffled[0]);
     setRightJoke(shuffled[1]);
+    setWinner(null);
   }, [jokes]);
 
   useEffect(() => {
@@ -80,27 +94,31 @@ const JokeBattle: React.FC = () => {
   const handleVote = async (side: 'left' | 'right') => {
     if (!leftJoke || !rightJoke) return;
 
-    const winner = side === 'left' ? leftJoke : rightJoke;
-    const loser = side === 'left' ? rightJoke : leftJoke;
+    const winnerJoke = side === 'left' ? leftJoke : rightJoke;
+    const loserJoke = side === 'left' ? rightJoke : leftJoke;
 
     try {
       // Update winner
-      const winnerRef = doc(db, 'jokes', winner.id);
+      const winnerRef = doc(db, 'jokes', winnerJoke.id);
       await updateDoc(winnerRef, { wins: increment(1) });
 
       // Update loser
-      const loserRef = doc(db, 'jokes', loser.id);
+      const loserRef = doc(db, 'jokes', loserJoke.id);
       await updateDoc(loserRef, { losses: increment(1) });
 
       // Update local state
       setJokes(jokes.map(joke => 
-        joke.id === winner.id ? { ...joke, wins: joke.wins + 1 } :
-        joke.id === loser.id ? { ...joke, losses: joke.losses + 1 } :
+        joke.id === winnerJoke.id ? { ...joke, wins: joke.wins + 1 } :
+        joke.id === loserJoke.id ? { ...joke, losses: joke.losses + 1 } :
         joke
       ));
 
       setBattleCount(prev => prev + 1);
-      setNewJokes();
+      setWinner(side);
+      setShowConfetti(true);
+      
+      // Reset confetti after 5 seconds
+      setTimeout(() => setShowConfetti(false), 5000);
     } catch (err) {
       console.error('Error updating joke win/loss:', err);
       setError(`Failed to update joke win/loss. Error: ${err instanceof Error ? err.message : String(err)}`);
@@ -133,18 +151,27 @@ const JokeBattle: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h2" align="center" gutterBottom>
-        Joke Battle
-      </Typography>
-      <Typography variant="subtitle1" align="center" gutterBottom>
-        Vote for your favorite joke! Battles fought: {battleCount}
-      </Typography>
-      <Grid container spacing={4} justifyContent="center" alignItems="stretch" sx={{ mt: 4 }}>
+      <ArenaBackground>
+        <Typography variant="h2" align="center" gutterBottom sx={{ color: 'white' }}>
+          Joke Battle Arena
+        </Typography>
+        <Typography variant="subtitle1" align="center" gutterBottom sx={{ color: 'white' }}>
+          Vote for your favorite joke! Battles fought: {battleCount}
+        </Typography>
+      </ArenaBackground>
+      
+      <Grid container spacing={4} justifyContent="center" alignItems="stretch">
         {leftJoke && rightJoke && (
           <>
             <Grid item xs={12} md={5}>
-              <motion.div whileHover={{ scale: 1.03 }}>
-                <JokeCard>
+              <AnimatePresence mode="wait">
+                <JokeCard
+                  key={leftJoke.id}
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <CardContent>
                     <Typography variant="h5" gutterBottom>{leftJoke.setup}</Typography>
                     <Typography variant="body1">{leftJoke.punchline}</Typography>
@@ -164,14 +191,20 @@ const JokeBattle: React.FC = () => {
                     </Button>
                   </CardActions>
                 </JokeCard>
-              </motion.div>
+              </AnimatePresence>
             </Grid>
             <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <Typography variant="h3" sx={{ fontWeight: 'bold' }}>VS</Typography>
             </Grid>
             <Grid item xs={12} md={5}>
-              <motion.div whileHover={{ scale: 1.03 }}>
-                <JokeCard>
+              <AnimatePresence mode="wait">
+                <JokeCard
+                  key={rightJoke.id}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <CardContent>
                     <Typography variant="h5" gutterBottom>{rightJoke.setup}</Typography>
                     <Typography variant="body1">{rightJoke.punchline}</Typography>
@@ -191,7 +224,7 @@ const JokeBattle: React.FC = () => {
                     </Button>
                   </CardActions>
                 </JokeCard>
-              </motion.div>
+              </AnimatePresence>
             </Grid>
           </>
         )}
@@ -204,6 +237,7 @@ const JokeBattle: React.FC = () => {
       <Typography variant="body2" align="center" sx={{ mt: 2 }}>
         Total jokes available: {jokes.length}
       </Typography>
+      {showConfetti && <Confetti />}
     </Container>
   );
 };
